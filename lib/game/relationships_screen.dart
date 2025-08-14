@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'player_model.dart';
 import 'ui/app_theme.dart';
+import 'social_media_screen.dart';
 
 class RelationshipsScreen extends StatelessWidget {
   final PlayerModel player;
@@ -157,7 +158,7 @@ class RelationshipsScreen extends StatelessWidget {
                                     'Social Media\nPost',
                                     Icons.share,
                                     AppTheme.primaryPurple,
-                                    () => _socialMediaPost(),
+                                    () => _socialMediaPost(context),
                                     5,
                                   ),
                                 ),
@@ -366,9 +367,12 @@ class RelationshipsScreen extends StatelessWidget {
     player.improveRelationships();
   }
 
-  void _socialMediaPost() {
-    if (player.energy >= 5) {
-      player.socialMediaPost();
-    }
+  void _socialMediaPost(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SocialMediaScreen(player: player),
+      ),
+    );
   }
 }

@@ -1,298 +1,425 @@
 import 'package:flutter/material.dart';
 import 'player_model.dart';
+import 'ui/app_theme.dart';
+import 'game_wrapper.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   final PlayerModel player;
   const SettingsScreen({required this.player, super.key});
 
   @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF2A2A2A),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top status bar (same as main screen)
-            Container(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '\$${player.money}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.flash_on,
-                            color: Colors.red,
-                            size: 16,
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              Container(
+                decoration: AppTheme.cardDecoration,
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.primaryGradient,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          Text(
-                            '${player.energy} | ${player.maxEnergy}',
-                            style: const TextStyle(
-                              color: Colors.red,
-                              fontSize: 16,
+                          child: const Icon(
+                            Icons.settings,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Settings', style: AppTheme.titleLarge),
+                              Text(
+                                'Manage your game preferences',
+                                style: AppTheme.bodyMedium,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.primaryGradient,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Week ${widget.player.week}',
+                            style: AppTheme.bodyLarge.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      ElevatedButton(
-                        onPressed: player.endWeek,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          shape: RoundedRectangleBorder(
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Money and Energy
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.attach_money,
+                                  color: AppTheme.accentGold,
+                                  size: 20,
+                                ),
+                                Text(
+                                  '${widget.player.money}',
+                                  style: AppTheme.titleLarge.copyWith(
+                                    color: AppTheme.accentGold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.flash_on,
+                                  color: AppTheme.energyRed,
+                                  size: 16,
+                                ),
+                                Text(
+                                  '${widget.player.energy} / ${widget.player.maxEnergy}',
+                                  style: AppTheme.bodyLarge.copyWith(
+                                    color: AppTheme.energyRed,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+
+                        // End Week button
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.primaryGradient,
                             borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primaryPurple.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton(
+                            onPressed: widget.player.endWeek,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.skip_next, size: 16),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'END WEEK',
+                                  style: AppTheme.bodyLarge.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        child: const Text(
-                          'END WEEK',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Week ${player.week}, ${player.year}',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            // Restart and Settings header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'RESTART',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  const Text(
-                    'SETTINGS',
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Blue divider line
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              height: 2,
-              color: Colors.blue,
-            ),
-
-            const SizedBox(height: 24),
-
-            // More Energy section
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[700],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'MORE ENERGY?',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.card_giftcard,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Energy purchases
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  Row(
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: _buildEnergyCard(
-                          '+500',
-                          'ENERGY',
-                          '1.99',
-                          Colors.red,
+                      // Restart Game Section
+                      Container(
+                        decoration: AppTheme.cardDecoration,
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.restart_alt,
+                                  color: AppTheme.energyRed,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Game Management',
+                                  style: AppTheme.titleMedium.copyWith(
+                                    color: AppTheme.accentGold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Start fresh with a new character and reset all progress',
+                              style: AppTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () => _showRestartDialog(context),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.energyRed,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.restart_alt, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'RESTART GAME',
+                                      style: AppTheme.bodyLarge.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildEnergyCard(
-                          '+3K',
-                          'ENERGY',
-                          '4.99',
-                          Colors.red,
-                          bonus: '240% BONUS',
+
+                      const SizedBox(height: 16),
+
+                      // Energy Store
+                      Container(
+                        decoration: AppTheme.cardDecoration,
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.flash_on,
+                                  color: AppTheme.energyRed,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Energy Store',
+                                  style: AppTheme.titleMedium.copyWith(
+                                    color: AppTheme.accentGold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Need more energy to continue your music career?',
+                              style: AppTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Energy packages
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildEnergyCard(
+                                    '+500',
+                                    'ENERGY',
+                                    '\$1.99',
+                                    AppTheme.energyRed,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildEnergyCard(
+                                    '+1500',
+                                    'ENERGY',
+                                    '\$4.99',
+                                    AppTheme.energyRed,
+                                    bonus: '50% BONUS',
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildEnergyCard(
+                                    '+5000',
+                                    'ENERGY',
+                                    '\$9.99',
+                                    AppTheme.energyRed,
+                                    bonus: '100% BONUS',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildEnergyCard(
-                          '+25K',
-                          'ENERGY',
-                          '9.99',
-                          Colors.red,
-                          bonus: '416% BONUS',
+
+                      const SizedBox(height: 16),
+
+                      // Max Energy Upgrades
+                      Container(
+                        decoration: AppTheme.cardDecoration,
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.upgrade,
+                                  color: AppTheme.successGreen,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Permanent Upgrades',
+                                  style: AppTheme.titleMedium.copyWith(
+                                    color: AppTheme.accentGold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Increase your maximum energy permanently',
+                              style: AppTheme.bodySmall,
+                            ),
+                            const SizedBox(height: 20),
+
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildMaxEnergyCard(
+                                    '+75',
+                                    'MAX ENERGY',
+                                    '\$3.99',
+                                    'PERMANENT',
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildMaxEnergyCard(
+                                    '+200',
+                                    'MAX ENERGY',
+                                    '\$7.99',
+                                    'PERMANENT',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
+
+                      const SizedBox(height: 16),
+
+                      // Cash Store
+                      Container(
+                        decoration: AppTheme.cardDecoration,
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.attach_money,
+                                  color: AppTheme.accentGold,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Cash Packages',
+                                  style: AppTheme.titleMedium.copyWith(
+                                    color: AppTheme.accentGold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Boost your finances to afford better equipment and opportunities',
+                              style: AppTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 20),
+
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildCashCard(
+                                    '25K',
+                                    'CASH',
+                                    '\$2.99',
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildCashCard(
+                                    '100K',
+                                    'CASH',
+                                    '\$7.99',
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildCashCard(
+                                    '500K',
+                                    'CASH',
+                                    '\$19.99',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 80), // Bottom padding for nav bar
                     ],
                   ),
-
-                  const SizedBox(height: 24),
-
-                  const Center(
-                    child: Text(
-                      'INCREASE YOUR MAX ENERGY',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Center(
-                    child: Text(
-                      'Applied instantly and on restarts + unlocks feature artist name changes. Deleting the app will delete permanent upgrades',
-                      style: TextStyle(color: Colors.white38, fontSize: 12),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildMaxEnergyCard(
-                          '+75',
-                          'MAX ENERGY',
-                          '3.99',
-                          'PERMANENT',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildMaxEnergyCard(
-                          '+200',
-                          'MAX ENERGY',
-                          '7.99',
-                          'PERMANENT',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildMaxEnergyCard(
-                          '+500',
-                          'MAX ENERGY',
-                          '14.99',
-                          'PERMANENT',
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[700],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'CASH MONEY',
-                        style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  Row(
-                    children: [
-                      Expanded(child: _buildCashCard('25K', 'CASH')),
-                      const SizedBox(width: 8),
-                      Expanded(child: _buildCashCard('100K', 'CASH')),
-                      const SizedBox(width: 8),
-                      Expanded(child: _buildCashCard('500K', 'CASH')),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -306,51 +433,50 @@ class SettingsScreen extends StatelessWidget {
     String? bonus,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[800],
+        gradient: LinearGradient(
+          colors: [color.withOpacity(0.2), color.withOpacity(0.1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.5)),
       ),
       child: Column(
         children: [
           Text(
             amount,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
+            style: AppTheme.titleMedium.copyWith(
+              color: color,
               fontWeight: FontWeight.bold,
             ),
           ),
-          Text(
-            type,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-          const SizedBox(height: 8),
+          Text(type, style: AppTheme.bodySmall),
+          const SizedBox(height: 12),
           Icon(Icons.flash_on, color: color, size: 32),
           if (bonus != null) ...[
             const SizedBox(height: 8),
             Text(
               bonus,
-              style: const TextStyle(
-                color: Colors.green,
-                fontSize: 10,
+              style: AppTheme.bodySmall.copyWith(
+                color: AppTheme.successGreen,
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
             ),
           ],
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
               price,
-              style: const TextStyle(
+              style: AppTheme.bodyMedium.copyWith(
                 color: Colors.white,
-                fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -367,48 +493,50 @@ class SettingsScreen extends StatelessWidget {
     String permanent,
   ) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[800],
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.successGreen.withOpacity(0.2),
+            AppTheme.successGreen.withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.successGreen.withOpacity(0.5)),
       ),
       child: Column(
         children: [
           Text(
             amount,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
+            style: AppTheme.titleMedium.copyWith(
+              color: AppTheme.successGreen,
               fontWeight: FontWeight.bold,
             ),
           ),
-          Text(
-            type,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-          const SizedBox(height: 8),
-          const Icon(Icons.flash_on, color: Colors.orange, size: 32),
+          Text(type, style: AppTheme.bodySmall),
           const SizedBox(height: 8),
           Text(
             permanent,
-            style: const TextStyle(
-              color: Colors.orange,
-              fontSize: 10,
+            style: AppTheme.bodySmall.copyWith(
+              color: AppTheme.successGreen,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          Icon(Icons.upgrade, color: AppTheme.successGreen, size: 24),
+          const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.orange,
+              color: AppTheme.successGreen,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
               price,
-              style: const TextStyle(
+              style: AppTheme.bodyMedium.copyWith(
                 color: Colors.white,
-                fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -418,30 +546,137 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCashCard(String amount, String type) {
+  Widget _buildCashCard(String amount, String type, String price) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[800],
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.accentGold.withOpacity(0.2),
+            AppTheme.accentGold.withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.accentGold.withOpacity(0.5)),
       ),
       child: Column(
         children: [
           Text(
             amount,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
+            style: AppTheme.titleMedium.copyWith(
+              color: AppTheme.accentGold,
               fontWeight: FontWeight.bold,
             ),
           ),
-          Text(
-            type,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          Text(type, style: AppTheme.bodySmall),
+          const SizedBox(height: 12),
+          Icon(Icons.attach_money, color: AppTheme.accentGold, size: 32),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppTheme.accentGold,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              price,
+              style: AppTheme.bodyMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
-          const SizedBox(height: 16),
         ],
       ),
+    );
+  }
+
+  void _showRestartDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.cardBackground,
+          title: Row(
+            children: [
+              const Icon(Icons.warning, color: AppTheme.energyRed, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                'Restart Game',
+                style: AppTheme.titleMedium.copyWith(color: AppTheme.energyRed),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Are you sure you want to restart the game?',
+                style: AppTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'This will:',
+                style: AppTheme.bodyMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text('• Delete all progress', style: AppTheme.bodySmall),
+              Text('• Reset your character', style: AppTheme.bodySmall),
+              Text('• Clear all achievements', style: AppTheme.bodySmall),
+              Text('• Remove saved jobs', style: AppTheme.bodySmall),
+              const SizedBox(height: 8),
+              Text(
+                'This action cannot be undone!',
+                style: AppTheme.bodySmall.copyWith(
+                  color: AppTheme.energyRed,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: AppTheme.bodyMedium.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await widget.player.resetGame();
+                // Navigate back to main menu
+                if (context.mounted) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                      builder: (context) => const GameWrapper(),
+                    ),
+                    (route) => false,
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.energyRed,
+              ),
+              child: Text(
+                'Restart',
+                style: AppTheme.bodyMedium.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

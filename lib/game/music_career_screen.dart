@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'player_model.dart';
 import 'ui/app_theme.dart';
+import 'social_media_screen.dart';
+import 'relationship_management_screen.dart';
+import 'song_creation_screen.dart';
 
 class MusicCareerScreen extends StatelessWidget {
   final PlayerModel player;
@@ -71,7 +74,9 @@ class MusicCareerScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Text(
-                                player.artistName,
+                                player.playerName.isNotEmpty
+                                    ? player.playerName
+                                    : player.artistName,
                                 style: AppTheme.titleMedium,
                               ),
                               Container(
@@ -89,7 +94,9 @@ class MusicCareerScreen extends StatelessWidget {
                                   ),
                                 ),
                                 child: Text(
-                                  player.fameLevel,
+                                  player.careerType.isNotEmpty
+                                      ? player.careerType
+                                      : player.fameLevel,
                                   style: AppTheme.bodySmall.copyWith(
                                     color: AppTheme.textSecondary,
                                   ),
@@ -232,28 +239,20 @@ class MusicCareerScreen extends StatelessWidget {
                                 'Write Song',
                                 Icons.edit,
                                 AppTheme.primaryPurple,
-                                () => player.writeSong(),
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SongCreationScreen(
+                                      player: player,
+                                      onSongCreated: () =>
+                                          Navigator.pop(context),
+                                    ),
+                                  ),
+                                ),
                                 energyCost: 10,
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildActionButton(
-                                'Record',
-                                Icons.mic,
-                                AppTheme.energyRed,
-                                () => player.recordInStudio(),
-                                energyCost: 20,
-                                moneyCost: 500,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        Row(
-                          children: [
                             Expanded(
                               child: _buildActionButton(
                                 'Concert',
@@ -264,16 +263,6 @@ class MusicCareerScreen extends StatelessWidget {
                                 requirement: 'Fans: 50+',
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildActionButton(
-                                'Social Media',
-                                Icons.share,
-                                const Color(0xFF3B82F6),
-                                () => player.socialMediaPost(),
-                                energyCost: 5,
-                              ),
-                            ),
                           ],
                         ),
 
@@ -283,24 +272,24 @@ class MusicCareerScreen extends StatelessWidget {
                           children: [
                             Expanded(
                               child: _buildActionButton(
-                                'Relationships',
-                                Icons.favorite,
-                                const Color(0xFFEC4899),
-                                () => player.improveRelationships(),
-                                energyCost: 8,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildActionButton(
-                                'Rest',
-                                Icons.hotel,
-                                AppTheme.successGreen,
-                                () => player.rest(),
-                                energyCost: 0,
+                                'Social Media',
+                                Icons.share,
+                                const Color(0xFF3B82F6),
+                                () => _navigateToSocialMedia(context),
+                                energyCost: 5,
                               ),
                             ),
                           ],
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        _buildActionButton(
+                          'Relationships',
+                          Icons.favorite,
+                          const Color(0xFFEC4899),
+                          () => _navigateToRelationships(context),
+                          energyCost: 0,
                         ),
                         const SizedBox(
                           height: 80,
@@ -555,6 +544,24 @@ class MusicCareerScreen extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  void _navigateToSocialMedia(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SocialMediaScreen(player: player),
+      ),
+    );
+  }
+
+  void _navigateToRelationships(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RelationshipManagementScreen(player: player),
       ),
     );
   }

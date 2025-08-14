@@ -24,15 +24,20 @@ class TraitCard extends StatelessWidget {
           Container(
             width: 40,
             height: 40,
-            decoration: const BoxDecoration(
-              color: Colors.white24,
+            decoration: BoxDecoration(
+              color: trait.isMaxLevel
+                  ? Colors.amber.withOpacity(0.3)
+                  : Colors.white24,
               shape: BoxShape.circle,
+              border: trait.isMaxLevel
+                  ? Border.all(color: Colors.amber, width: 2)
+                  : null,
             ),
             child: Center(
               child: Text(
                 '${trait.level}',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: trait.isMaxLevel ? Colors.amber : Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -46,13 +51,26 @@ class TraitCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  trait.name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      trait.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${trait.level}/${trait.maxLevel}',
+                      style: TextStyle(
+                        color: trait.isMaxLevel ? Colors.amber : Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Container(
@@ -63,10 +81,10 @@ class TraitCard extends StatelessWidget {
                   ),
                   child: FractionallySizedBox(
                     alignment: Alignment.centerLeft,
-                    widthFactor: trait.progress,
+                    widthFactor: trait.isMaxLevel ? 1.0 : trait.progress,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: trait.isMaxLevel ? Colors.amber : Colors.white,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -97,19 +115,28 @@ class TraitCard extends StatelessWidget {
 
           // Upgrade button
           GestureDetector(
-            onTap: canUpgrade
-                ? () => player.upgradeTrait(trait)
-                : () => player.trainTrait(trait),
+            onTap: trait.isMaxLevel
+                ? null
+                : (canUpgrade
+                      ? () => player.upgradeTrait(trait)
+                      : () => player.trainTrait(trait)),
             child: Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: canUpgrade ? Colors.green : Colors.white24,
+                color: trait.isMaxLevel
+                    ? Colors.amber.withOpacity(0.3)
+                    : (canUpgrade ? Colors.green : Colors.white24),
                 shape: BoxShape.circle,
+                border: trait.isMaxLevel
+                    ? Border.all(color: Colors.amber, width: 2)
+                    : null,
               ),
               child: Icon(
-                canUpgrade ? Icons.arrow_upward : Icons.add,
-                color: Colors.white,
+                trait.isMaxLevel
+                    ? Icons.star
+                    : (canUpgrade ? Icons.arrow_upward : Icons.add),
+                color: trait.isMaxLevel ? Colors.amber : Colors.white,
                 size: 20,
               ),
             ),

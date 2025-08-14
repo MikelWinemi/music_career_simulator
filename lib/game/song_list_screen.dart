@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'player_model.dart';
+import 'ui/app_theme.dart';
 
 class SongListScreen extends StatelessWidget {
   final PlayerModel player;
@@ -10,316 +11,249 @@ class SongListScreen extends StatelessWidget {
     return AnimatedBuilder(
       animation: player,
       builder: (context, _) => Scaffold(
-        backgroundColor: const Color(0xFF1A1A2E),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF16213E),
-          title: const Text(
-            'My Songs',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: AppTheme.backgroundGradient,
           ),
-          actions: [
-            Container(
-              margin: const EdgeInsets.only(right: 16),
-              child: Center(
-                child: Text(
-                  '${player.songs.length} Songs',
-                  style: const TextStyle(
-                    color: Color(0xFF53A0E8),
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        body: player.songs.isEmpty
-            ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.music_note, size: 64, color: Colors.white30),
-                    SizedBox(height: 16),
-                    Text(
-                      'No songs yet!',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  decoration: AppTheme.cardDecoration,
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
                       ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Start writing songs to build your career',
-                      style: TextStyle(color: Colors.white54, fontSize: 14),
-                    ),
-                  ],
-                ),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: player.songs.length,
-                itemBuilder: (context, index) {
-                  final song = player.songs[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF16213E).withOpacity(0.8),
-                          const Color(0xFF0F3460).withOpacity(0.8),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: song.isRecorded
-                            ? const Color(0xFF53A0E8)
-                            : Colors.white10,
-                        width: 1,
-                      ),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(16),
-                      leading: Container(
-                        width: 50,
-                        height: 50,
+                      const SizedBox(width: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: song.isRecorded
-                              ? const Color(0xFF53A0E8)
-                              : const Color(0xFF9C27B0),
-                          borderRadius: BorderRadius.circular(8),
+                          gradient: AppTheme.primaryGradient,
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(
-                          song.isRecorded ? Icons.album : Icons.edit,
+                        child: const Icon(
+                          Icons.library_music,
                           color: Colors.white,
                           size: 24,
                         ),
                       ),
-                      title: Text(
-                        song.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('My Songs', style: AppTheme.titleLarge),
+                            Text(
+                              '${player.songs.length} songs in your catalog',
+                              style: AppTheme.bodyMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Content
+                Expanded(
+                  child: player.songs.isEmpty
+                      ? _buildEmptyState()
+                      : _buildSongsList(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(32),
+        decoration: AppTheme.cardDecoration,
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.music_note,
+                color: Colors.white,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No Songs Yet!',
+              style: AppTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Start writing songs to build your music catalog and advance your career.',
+              style: AppTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSongsList() {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: player.songs.length,
+      itemBuilder: (context, index) {
+        final song = player.songs[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: AppTheme.cardDecoration,
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(20),
+            leading: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: song.isRecorded
+                    ? AppTheme.primaryGradient
+                    : LinearGradient(
+                        colors: [
+                          AppTheme.warningOrange.withOpacity(0.8),
+                          AppTheme.warningOrange.withOpacity(0.6),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        (song.isRecorded
+                                ? AppTheme.primaryPurple
+                                : AppTheme.warningOrange)
+                            .withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                song.isRecorded ? Icons.album : Icons.edit,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+            title: Text(
+              song.title,
+              style: AppTheme.titleMedium.copyWith(color: AppTheme.textPrimary),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Text(
+                  song.genre,
+                  style: AppTheme.bodySmall.copyWith(
+                    color: AppTheme.accentGold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: song.isRecorded
+                            ? AppTheme.successGreen.withOpacity(0.2)
+                            : AppTheme.warningOrange.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: song.isRecorded
+                              ? AppTheme.successGreen
+                              : AppTheme.warningOrange,
+                        ),
+                      ),
+                      child: Text(
+                        song.isRecorded ? 'RECORDED' : 'DEMO',
+                        style: AppTheme.bodySmall.copyWith(
+                          color: song.isRecorded
+                              ? AppTheme.successGreen
+                              : AppTheme.warningOrange,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 4),
-                          Text(
-                            'Genre: ${song.genre}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.star,
-                                color: _getQualityColor(song.quality),
-                                size: 16,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Quality: ${song.quality}%',
-                                style: TextStyle(
-                                  color: _getQualityColor(song.quality),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const Spacer(),
-                              if (song.isRecorded) ...[
-                                const Icon(
-                                  Icons.check_circle,
-                                  color: Color(0xFF53A0E8),
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 4),
-                                const Text(
-                                  'Recorded',
-                                  style: TextStyle(
-                                    color: Color(0xFF53A0E8),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ] else ...[
-                                const Icon(
-                                  Icons.edit,
-                                  color: Color(0xFF9C27B0),
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 4),
-                                const Text(
-                                  'Draft',
-                                  style: TextStyle(
-                                    color: Color(0xFF9C27B0),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                      trailing: song.isRecorded
-                          ? null
-                          : IconButton(
-                              onPressed: () => _showRecordDialog(context, song),
-                              icon: const Icon(
-                                Icons.mic,
-                                color: Color(0xFFE94560),
-                              ),
-                            ),
                     ),
-                  );
-                },
-              ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => _showWriteSongDialog(context),
-          backgroundColor: const Color(0xFF9C27B0),
-          child: const Icon(Icons.add, color: Colors.white),
-        ),
-      ),
-    );
-  }
-
-  Color _getQualityColor(int quality) {
-    if (quality >= 80) return const Color(0xFF4CAF50); // Green
-    if (quality >= 60) return const Color(0xFFFF9800); // Orange
-    if (quality >= 40) return const Color(0xFFFFC107); // Yellow
-    return const Color(0xFFE94560); // Red
-  }
-
-  void _showWriteSongDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF16213E),
-        title: const Text(
-          'Write New Song',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Create a new song for your career!',
-              style: TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                const Icon(Icons.flash_on, color: Color(0xFFE94560), size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  'Energy Cost: 10',
-                  style: TextStyle(
-                    color: player.energy >= 10 ? Colors.white : Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
+                    const SizedBox(width: 8),
+                    if (song.isRecorded) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentGold.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.accentGold),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.star,
+                              color: AppTheme.accentGold,
+                              size: 12,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${song.quality}%',
+                              style: AppTheme.bodySmall.copyWith(
+                                color: AppTheme.accentGold,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white70),
-            ),
+            trailing: song.isRecorded
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('Streams', style: AppTheme.bodySmall),
+                      Text(
+                        '${song.quality * 10}', // Use quality as a basis for display
+                        style: AppTheme.bodyMedium.copyWith(
+                          color: AppTheme.primaryPurple,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  )
+                : const Icon(Icons.chevron_right, color: AppTheme.textMuted),
           ),
-          ElevatedButton(
-            onPressed: player.energy >= 10
-                ? () {
-                    player.writeSong();
-                    Navigator.pop(context);
-                  }
-                : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF9C27B0),
-            ),
-            child: const Text(
-              'Write Song',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showRecordDialog(BuildContext context, Song song) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF16213E),
-        title: Text(
-          'Record "${song.title}"',
-          style: const TextStyle(color: Colors.white),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Record this song in the studio to make it available for streaming and performances.',
-              style: const TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                const Icon(Icons.flash_on, color: Color(0xFFE94560), size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  'Energy: 20',
-                  style: TextStyle(
-                    color: player.energy >= 20 ? Colors.white : Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                const Icon(Icons.attach_money, color: Colors.green, size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  'Cost: \$500',
-                  style: TextStyle(
-                    color: player.money >= 500 ? Colors.white : Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white70),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: (player.energy >= 20 && player.money >= 500)
-                ? () {
-                    player.recordSong(song);
-                    Navigator.pop(context);
-                  }
-                : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE94560),
-            ),
-            child: const Text('Record', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'ui/main_menu.dart';
+import 'ui/character_creation_screen.dart';
 import 'player_model.dart';
 import 'game_screen.dart';
 import 'music_career_screen.dart';
-import 'song_list_screen.dart';
 import 'financials_screen.dart';
 import 'lifestyle_screen.dart';
 import 'settings_screen.dart';
@@ -17,17 +17,44 @@ class GameWrapper extends StatefulWidget {
 
 class _GameWrapperState extends State<GameWrapper> {
   bool _inGame = false;
+  bool _inCharacterCreation = false;
   late PlayerModel _player;
   int _currentIndex = 0;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _player = PlayerModel();
+    _loadGameData();
   }
 
-  void _startGame() {
+  Future<void> _loadGameData() async {
+    await _player.loadData();
     setState(() {
+      _isLoading = false;
+      // If character was already created, go straight to game
+      if (_player.characterCreated) {
+        _inGame = true;
+        _inCharacterCreation = false;
+      } else {
+        _inGame = false;
+        _inCharacterCreation = false;
+      }
+    });
+  }
+
+  void _startCharacterCreation() {
+    setState(() {
+      _inCharacterCreation = true;
+    });
+  }
+
+  void _completeCharacterCreation() {
+    _player.characterCreated = true;
+    _player.saveData(); // Save character creation completion
+    setState(() {
+      _inCharacterCreation = false;
       _inGame = true;
     });
   }
@@ -35,7 +62,6 @@ class _GameWrapperState extends State<GameWrapper> {
   List<Widget> get _screens => [
     MusicCareerScreen(player: _player),
     GameScreen(player: _player),
-    SongListScreen(player: _player),
     FinancialsScreen(player: _player),
     LifestyleScreen(player: _player),
     SettingsScreen(player: _player),
@@ -43,6 +69,10 @@ class _GameWrapperState extends State<GameWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     if (_inGame) {
       return Scaffold(
         body: _screens[_currentIndex],
@@ -59,18 +89,22 @@ class _GameWrapperState extends State<GameWrapper> {
                 children: [
                   _buildNavIcon(Icons.album, 0),
                   _buildNavIcon(Icons.trending_up, 1),
-                  _buildNavIcon(Icons.music_note, 2),
-                  _buildNavIcon(Icons.access_time, 3),
-                  _buildNavIcon(Icons.home, 4),
-                  _buildNavIcon(Icons.settings, 5),
+                  _buildNavIcon(Icons.attach_money, 2),
+                  _buildNavIcon(Icons.home, 3),
+                  _buildNavIcon(Icons.settings, 4),
                 ],
               ),
             ),
           ),
         ),
       );
+    } else if (_inCharacterCreation) {
+      return CharacterCreationScreen(
+        player: _player,
+        onComplete: _completeCharacterCreation,
+      );
     } else {
-      return Scaffold(body: MainMenu(onStart: _startGame));
+      return MainMenu(onStart: _startCharacterCreation);
     }
   }
 
