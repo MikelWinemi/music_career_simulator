@@ -85,6 +85,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
         children: [
           _buildNameStep(),
           _buildGenderStep(),
+          _buildAgeStep(),
           _buildCareerStep(),
           _buildMusicStyleStep(),
         ],
@@ -97,7 +98,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
             children: [
               // Progress indicator
               Text(
-                'Step ${_currentStep + 1} of 4',
+                'Step ${_currentStep + 1} of 5',
                 style: AppTheme.bodyMedium.copyWith(
                   color: Colors.white.withOpacity(0.7),
                 ),
@@ -111,7 +112,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      _currentStep == 3 ? 'Start Game' : 'Next',
+                      _currentStep == 4 ? 'Start Game' : 'Next',
                       style: const TextStyle(
                         color: Colors.black,
                         fontWeight: FontWeight.bold,
@@ -313,6 +314,164 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildAgeStep() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: AppTheme.cardDecoration,
+      child: Column(
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primaryPurple,
+                  AppTheme.accentGold.withOpacity(0.3),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  '🎂 Choose Your Age',
+                  style: AppTheme.titleLarge.copyWith(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'How old are you when starting your music career?',
+                  style: AppTheme.bodyMedium.copyWith(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+
+          // Content
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Age slider with current value display
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppTheme.accentGold.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          '${widget.player.age}',
+                          style: AppTheme.titleLarge.copyWith(
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.accentGold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Years Old',
+                          style: AppTheme.bodyMedium.copyWith(
+                            color: AppTheme.textSecondary,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            activeTrackColor: AppTheme.accentGold,
+                            inactiveTrackColor: AppTheme.accentGold.withOpacity(
+                              0.3,
+                            ),
+                            thumbColor: AppTheme.accentGold,
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 12,
+                            ),
+                            overlayColor: AppTheme.accentGold.withOpacity(0.2),
+                            trackHeight: 6,
+                          ),
+                          child: Slider(
+                            value: widget.player.age.toDouble(),
+                            min: 16,
+                            max: 35,
+                            divisions: 19,
+                            onChanged: (value) {
+                              setState(() {
+                                widget.player.age = value.round();
+                              });
+                            },
+                          ),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '16',
+                              style: AppTheme.bodySmall.copyWith(
+                                color: AppTheme.textMuted,
+                              ),
+                            ),
+                            Text(
+                              '35',
+                              style: AppTheme.bodySmall.copyWith(
+                                color: AppTheme.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    _getAgeDescription(widget.player.age),
+                    style: AppTheme.bodyMedium.copyWith(
+                      color: AppTheme.textSecondary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getAgeDescription(int age) {
+    if (age <= 18) {
+      return "Starting young gives you more time to develop your skills and build a following.";
+    } else if (age <= 25) {
+      return "Perfect age to launch your music career with energy and ambition!";
+    } else if (age <= 30) {
+      return "You bring maturity and life experience to your music.";
+    } else {
+      return "A seasoned artist with wisdom and refined taste in music.";
+    }
   }
 
   Widget _buildCareerStep() {
@@ -617,8 +776,11 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
       case 1:
         return widget.player.gender.isNotEmpty;
       case 2:
-        return widget.player.careerType.isNotEmpty;
+        return widget.player.age >= 16 &&
+            widget.player.age <= 35; // Age validation
       case 3:
+        return widget.player.careerType.isNotEmpty;
+      case 4:
         return widget.player.avatarStyle.isNotEmpty;
       default:
         return false;
@@ -637,7 +799,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
   }
 
   void _nextStep() {
-    if (_currentStep < 3) {
+    if (_currentStep < 4) {
       setState(() => _currentStep++);
       _pageController.animateToPage(
         _currentStep,

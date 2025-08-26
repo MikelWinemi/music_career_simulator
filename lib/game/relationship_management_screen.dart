@@ -37,6 +37,15 @@ class _RelationshipManagementScreenState
       'moneyCost': 0,
     },
     {
+      'id': 'collab_album',
+      'name': 'Collab Album',
+      'icon': Icons.people,
+      'color': Color(0xFF7C3AED),
+      'description': 'Create an album together',
+      'energyCost': 30,
+      'moneyCost': 1000,
+    },
+    {
       'id': 'gift',
       'name': 'Send Gift',
       'icon': Icons.card_giftcard,

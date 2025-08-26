@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+import 'award_system.dart';
 
 class Trait {
   final String name;
@@ -54,23 +55,61 @@ class Song {
   final String genre;
   final int quality;
   bool isRecorded;
+  bool isPublished;
   int plays;
   int likes;
   double revenue;
   DateTime releaseDate;
+  DateTime? publishDate;
   String? albumTitle; // Which album this song belongs to, if any
+  String? groupName; // If this is a group song
+  SongPopularity popularity;
+  bool isGroupSong;
+  String? coverImagePath; // Path to the song's cover image
 
   Song({
     required this.title,
     required this.genre,
     required this.quality,
     this.isRecorded = false,
+    this.isPublished = false,
     this.plays = 0,
     this.likes = 0,
     this.revenue = 0.0,
     required this.releaseDate,
+    this.publishDate,
     this.albumTitle,
-  });
+    this.groupName,
+    SongPopularity? popularity,
+    this.isGroupSong = false,
+    this.coverImagePath,
+  }) : popularity = popularity ?? SongPopularity();
+
+  void publish() {
+    isPublished = true;
+    publishDate = DateTime.now();
+  }
+
+  void updateDailyStats(int playerFame) {
+    if (isPublished) {
+      popularity.updatePopularity(playerFame, quality);
+      plays = popularity.streams;
+
+      // Calculate revenue based on streams
+      double baseRevenue = popularity.streams * 0.001; // $0.001 per stream
+      if (popularity.isViral) {
+        baseRevenue *= 5; // Viral songs get bonus revenue
+      } else if (popularity.isHit) {
+        baseRevenue *= 2;
+      }
+      revenue += baseRevenue;
+    }
+  }
+
+  bool get isCharting => popularity.isCharting;
+  bool get isViral => popularity.isViral;
+  bool get isHit => popularity.isHit;
+  int get chartPosition => popularity.peakPosition;
 }
 
 class Album {
@@ -81,6 +120,13 @@ class Album {
   bool isReleased;
   int totalPlays;
   double totalRevenue;
+  List<String> collaborators; // List of collaborator names
+  String? producedBy; // Producer name if applicable
+  bool isCollaborativeAlbum;
+  String? coverImagePath; // Path to the album's cover image
+  bool hasVinyl; // Whether a vinyl version exists
+  DateTime? vinylReleaseDate;
+  int vinylSales;
 
   Album({
     required this.title,
@@ -90,7 +136,15 @@ class Album {
     this.isReleased = false,
     this.totalPlays = 0,
     this.totalRevenue = 0.0,
-  }) : songs = songs ?? [];
+    List<String>? collaborators,
+    this.producedBy,
+    this.isCollaborativeAlbum = false,
+    this.coverImagePath,
+    this.hasVinyl = false,
+    this.vinylReleaseDate,
+    this.vinylSales = 0,
+  }) : songs = songs ?? [],
+       collaborators = collaborators ?? [];
 
   void addSong(Song song) {
     songs.add(song);
@@ -102,6 +156,218 @@ class Album {
     totalPlays = songs.fold(0, (sum, song) => sum + song.plays);
     totalRevenue = songs.fold(0.0, (sum, song) => sum + song.revenue);
   }
+
+  // Check if album is eligible for vinyl release
+  bool get canCreateVinyl {
+    if (hasVinyl) return false;
+    updateStats();
+    return totalPlays >= 10000 || totalRevenue >= 5000;
+  }
+
+  void createVinyl() {
+    if (canCreateVinyl) {
+      hasVinyl = true;
+      vinylReleaseDate = DateTime.now();
+      vinylSales = 0;
+    }
+  }
+}
+
+class Vinyl {
+  final String albumTitle;
+  final DateTime releaseDate;
+  int unitsSold;
+  double pricePerUnit;
+  String? specialEdition; // "Limited", "Colored", "Picture Disc", etc.
+
+  Vinyl({
+    required this.albumTitle,
+    required this.releaseDate,
+    this.unitsSold = 0,
+    this.pricePerUnit = 25.0,
+    this.specialEdition,
+  });
+
+  double get totalRevenue => unitsSold * pricePerUnit;
+}
+
+class Concert {
+  final String name;
+  final String venue;
+  final String city;
+  final DateTime date;
+  final String type; // "Solo", "Festival", "Tour", "Opening Act"
+  int capacity;
+  int ticketsSold;
+  double ticketPrice;
+  bool isCompleted;
+  int fansGained;
+  double revenue;
+
+  Concert({
+    required this.name,
+    required this.venue,
+    required this.city,
+    required this.date,
+    required this.type,
+    this.capacity = 1000,
+    this.ticketsSold = 0,
+    this.ticketPrice = 50.0,
+    this.isCompleted = false,
+    this.fansGained = 0,
+    this.revenue = 0.0,
+  });
+
+  double get totalRevenue => ticketsSold * ticketPrice;
+  bool get isSoldOut => ticketsSold >= capacity;
+  double get attendanceRate => capacity > 0 ? ticketsSold / capacity : 0.0;
+}
+
+class Tour {
+  final String name;
+  final DateTime startDate;
+  final DateTime endDate;
+  List<Concert> concerts;
+  bool isActive;
+  bool isCompleted;
+  double totalRevenue;
+  int totalFansGained;
+
+  Tour({
+    required this.name,
+    required this.startDate,
+    required this.endDate,
+    List<Concert>? concerts,
+    this.isActive = false,
+    this.isCompleted = false,
+    this.totalRevenue = 0.0,
+    this.totalFansGained = 0,
+  }) : concerts = concerts ?? [];
+
+  void addConcert(Concert concert) {
+    concerts.add(concert);
+  }
+
+  void updateStats() {
+    totalRevenue = concerts.fold(0.0, (sum, concert) => sum + concert.revenue);
+    totalFansGained = concerts.fold(
+      0,
+      (sum, concert) => sum + concert.fansGained,
+    );
+  }
+
+  int get completedConcerts => concerts.where((c) => c.isCompleted).length;
+  int get totalConcerts => concerts.length;
+  bool get canStart => concerts.isNotEmpty && !isActive && !isCompleted;
+}
+
+class Group {
+  final String name;
+  final String genre;
+  final DateTime formedDate;
+  List<String> members;
+  String leader; // Name of the group leader (usually the player)
+  bool isActive;
+  int fame;
+  int fanBase;
+  List<Song> groupSongs;
+  List<Album> groupAlbums;
+  double groupRevenue;
+  String? recordLabel;
+
+  Group({
+    required this.name,
+    required this.genre,
+    required this.formedDate,
+    required this.members,
+    required this.leader,
+    this.isActive = true,
+    this.fame = 0,
+    this.fanBase = 0,
+    List<Song>? groupSongs,
+    List<Album>? groupAlbums,
+    this.groupRevenue = 0.0,
+    this.recordLabel,
+  }) : groupSongs = groupSongs ?? [],
+       groupAlbums = groupAlbums ?? [];
+
+  void addMember(String memberName) {
+    if (!members.contains(memberName)) {
+      members.add(memberName);
+    }
+  }
+
+  void removeMember(String memberName) {
+    members.removeWhere((member) => member == memberName);
+  }
+
+  void addGroupSong(Song song) {
+    groupSongs.add(song);
+  }
+
+  void updateGroupStats() {
+    groupRevenue = groupSongs.fold(0.0, (sum, song) => sum + song.revenue);
+    fanBase = groupSongs.fold(0, (sum, song) => sum + song.plays) ~/ 100;
+  }
+
+  bool get hasEnoughMembers => members.length >= 2;
+}
+
+class SongPopularity {
+  int streams;
+  int views; // For music videos
+  int dailyGrowth;
+  double trendingScore; // 0.0 to 1.0
+  List<String> platforms; // 'Spotify', 'YouTube', 'Apple Music', etc.
+  bool isCharting;
+  int peakPosition;
+  int weeksOnChart;
+
+  SongPopularity({
+    this.streams = 0,
+    this.views = 0,
+    this.dailyGrowth = 0,
+    this.trendingScore = 0.0,
+    List<String>? platforms,
+    this.isCharting = false,
+    this.peakPosition = 0,
+    this.weeksOnChart = 0,
+  }) : platforms = platforms ?? ['Independent'];
+
+  void updatePopularity(int playerFame, int songQuality) {
+    // Base growth calculation
+    int baseGrowth = (playerFame * songQuality / 100).round();
+    baseGrowth = baseGrowth.clamp(10, 10000);
+
+    // Random factor for viral potential
+    double viralChance = Random().nextDouble();
+    if (viralChance > 0.95) {
+      baseGrowth *= 10; // Viral hit!
+    } else if (viralChance > 0.85) {
+      baseGrowth *= 3; // Popular song
+    }
+
+    dailyGrowth = baseGrowth;
+    streams += dailyGrowth;
+    views += (dailyGrowth * 0.7).round(); // Slightly fewer views than streams
+
+    // Update trending score
+    trendingScore = (dailyGrowth / 10000.0).clamp(0.0, 1.0);
+
+    // Check if song enters charts
+    if (streams > 100000 && !isCharting) {
+      isCharting = true;
+      peakPosition = Random().nextInt(100) + 1;
+    }
+
+    if (isCharting) {
+      weeksOnChart++;
+    }
+  }
+
+  bool get isViral => streams > 1000000;
+  bool get isHit => streams > 500000;
+  bool get isPopular => streams > 100000;
 }
 
 class Contact {
@@ -181,7 +447,7 @@ class PlayerModel extends ChangeNotifier {
   int energy = 100;
   int maxEnergy = 100;
   int week = 1;
-  int year = 2023;
+  int year = 2025;
   String? eventMessage;
 
   // Music career stats
@@ -195,6 +461,7 @@ class PlayerModel extends ChangeNotifier {
   String playerName = "";
   String careerType = "artist"; // "artist" or "producer"
   String gender = "male"; // "male" or "female"
+  int age = 18; // Player's starting age
 
   // Avatar Plus configuration
   String avatarStyle =
@@ -215,7 +482,21 @@ class PlayerModel extends ChangeNotifier {
   // Songs and deals
   List<Song> songs = [];
   List<Album> albums = [];
+  List<Group> groups = []; // Groups the player is part of
+  Group? currentGroup; // Currently active group
   RecordDeal? currentDeal;
+
+  // Touring and concerts
+  List<Concert> concerts = [];
+  List<Tour> tours = [];
+  Tour? activeTour;
+  List<Vinyl> vinyls = [];
+
+  // Concert invitations and opportunities
+  List<Concert> concertInvitations = [];
+
+  // Awards and achievements
+  List<Award> awards = [];
 
   // Job Market
   String? currentJob;
@@ -445,7 +726,15 @@ class PlayerModel extends ChangeNotifier {
   void writeSong() {
     if (energy >= 10) {
       energy -= 10;
-      final genres = ['Pop', 'Rock', 'Hip-Hop', 'R&B', 'Electronic', 'Country'];
+      final genres = [
+        'Pop',
+        'Rock',
+        'Hip-Hop',
+        'R&B',
+        'Electronic',
+        'Country',
+        'Rage',
+      ];
       final songTitles = [
         'Midnight Dreams',
         'City Lights',
@@ -481,6 +770,8 @@ class PlayerModel extends ChangeNotifier {
     required String genre,
     String? albumTitle,
     String? existingAlbumTitle,
+    String? coverImagePath,
+    String? albumCoverImagePath,
   }) {
     if (energy >= 10) {
       energy -= 10;
@@ -497,6 +788,7 @@ class PlayerModel extends ChangeNotifier {
         quality: songQuality,
         releaseDate: DateTime.now(),
         albumTitle: albumTitle ?? existingAlbumTitle,
+        coverImagePath: coverImagePath,
       );
 
       songs.add(song);
@@ -508,6 +800,9 @@ class PlayerModel extends ChangeNotifier {
           title: albumTitle,
           genre: genre,
           releaseDate: DateTime.now(),
+          coverImagePath:
+              albumCoverImagePath ??
+              coverImagePath, // Use album cover or fall back to song cover
         );
         album.addSong(song);
         albums.add(album);
@@ -590,6 +885,314 @@ class PlayerModel extends ChangeNotifier {
       _addStress(4);
       notifyListeners();
     }
+  }
+
+  // Create a collaborative album with another artist or producer
+  bool createCollaborativeAlbum({
+    required String albumTitle,
+    required String collaboratorName,
+    required String collaboratorType, // "artist" or "producer"
+    required String genre,
+    List<Song>? initialSongs,
+    String? coverImagePath,
+  }) {
+    if (energy < 30 || money < 1000) {
+      eventMessage = 'Not enough energy or money for a collaborative album!';
+      return false;
+    }
+
+    energy -= 30;
+    money -= 1000; // Higher cost for collaboration
+
+    final album = Album(
+      title: albumTitle,
+      genre: genre,
+      releaseDate: DateTime.now(),
+      songs: initialSongs ?? [],
+      isCollaborativeAlbum: true,
+      collaborators: [collaboratorName],
+      producedBy: collaboratorType == "producer" ? collaboratorName : null,
+      coverImagePath: coverImagePath,
+    );
+
+    albums.add(album);
+
+    // Boost fame and other stats for collaboration
+    fame += Random().nextInt(20) + 10;
+    fans += Random().nextInt(100) + 50;
+
+    // Add collaboration-specific benefits
+    if (collaboratorType == "producer") {
+      songWriting.addProgress(0.4);
+      vocals.addProgress(0.3);
+    } else {
+      charisma.addProgress(0.3);
+      socialMediaFollowers += Random().nextInt(5000) + 1000;
+    }
+
+    eventMessage =
+        'Created collaborative album "$albumTitle" with $collaboratorName!';
+    _addStress(3);
+    _addHappiness(4);
+    notifyListeners();
+    return true;
+  }
+
+  // VINYL CREATION METHODS
+  bool canCreateVinyl(Album album) {
+    if (album.hasVinyl) return false;
+    album.updateStats();
+    return album.totalPlays >= 10000 ||
+        album.totalRevenue >= 5000 ||
+        fame >= 500;
+  }
+
+  bool createVinyl(Album album, {String? specialEdition}) {
+    if (!canCreateVinyl(album) || energy < 25 || money < 2000) {
+      eventMessage = 'Cannot create vinyl: requirements not met!';
+      return false;
+    }
+
+    energy -= 25;
+    money -= 2000; // Vinyl production cost
+
+    album.hasVinyl = true;
+    album.vinylReleaseDate = DateTime.now();
+
+    double basePrice = 25.0;
+    if (specialEdition != null) {
+      basePrice *= 1.5; // Special editions cost more
+    }
+
+    final vinyl = Vinyl(
+      albumTitle: album.title,
+      releaseDate: DateTime.now(),
+      pricePerUnit: basePrice,
+      specialEdition: specialEdition,
+    );
+
+    vinyls.add(vinyl);
+
+    // Initial sales based on popularity
+    int initialSales = (fans * 0.1 + fame * 0.05).round().clamp(10, 1000);
+    vinyl.unitsSold = initialSales;
+    album.vinylSales = initialSales;
+
+    double vinylRevenue = vinyl.totalRevenue;
+    money += vinylRevenue.round();
+
+    fame += 15;
+    fans += Random().nextInt(200) + 50;
+
+    eventMessage =
+        'Created vinyl for "${album.title}"! Sold $initialSales units!';
+    _addHappiness(3);
+    notifyListeners();
+    return true;
+  }
+
+  // TOURING AND CONCERT METHODS
+  bool get canGoOnTour {
+    return fame >= 200 && fans >= 1000 && energy >= 50;
+  }
+
+  bool get hasActiveTour {
+    return activeTour != null && activeTour!.isActive;
+  }
+
+  void generateConcertInvitations() {
+    if (fans < 500) return; // Need minimum fanbase
+
+    // Clear old invitations
+    concertInvitations.clear();
+
+    int numInvitations = 0;
+
+    // Fame-based invitation generation
+    if (fame >= 100) numInvitations += 1;
+    if (fame >= 300) numInvitations += 1;
+    if (fame >= 500) numInvitations += 1;
+    if (fame >= 1000) numInvitations += 2;
+
+    // Fan-based invitation generation
+    if (fans >= 1000) numInvitations += 1;
+    if (fans >= 5000) numInvitations += 1;
+    if (fans >= 10000) numInvitations += 2;
+
+    final venues = [
+      'The Mercury Lounge',
+      'Webster Hall',
+      'Brooklyn Bowl',
+      'Terminal 5',
+      'Madison Square Garden',
+      'Barclays Center',
+      'Red Rocks',
+      'The Fillmore',
+      'House of Blues',
+      'The Troubadour',
+      'The Roxy',
+      'The Wiltern',
+    ];
+
+    final cities = [
+      'New York',
+      'Los Angeles',
+      'Chicago',
+      'Nashville',
+      'Austin',
+      'Atlanta',
+      'Seattle',
+      'Denver',
+      'Boston',
+      'Philadelphia',
+    ];
+
+    final concertTypes = ['Solo', 'Festival', 'Opening Act'];
+
+    for (int i = 0; i < numInvitations; i++) {
+      final venue = venues[Random().nextInt(venues.length)];
+      final city = cities[Random().nextInt(cities.length)];
+      final type = concertTypes[Random().nextInt(concertTypes.length)];
+
+      int capacity = 500;
+      double ticketPrice = 30.0;
+
+      // Adjust based on fame and type
+      if (fame >= 500) {
+        capacity = Random().nextInt(2000) + 1000;
+        ticketPrice = 50.0;
+      }
+      if (fame >= 1000) {
+        capacity = Random().nextInt(5000) + 2000;
+        ticketPrice = 75.0;
+      }
+
+      if (type == 'Festival') {
+        capacity = Random().nextInt(10000) + 5000;
+        ticketPrice = 100.0;
+      } else if (type == 'Opening Act') {
+        capacity = Random().nextInt(1000) + 500;
+        ticketPrice = 25.0;
+      }
+
+      final concert = Concert(
+        name: '$type at $venue',
+        venue: venue,
+        city: city,
+        date: DateTime.now().add(Duration(days: Random().nextInt(60) + 7)),
+        type: type,
+        capacity: capacity,
+        ticketPrice: ticketPrice,
+      );
+
+      concertInvitations.add(concert);
+    }
+
+    if (concertInvitations.isNotEmpty) {
+      eventMessage =
+          'You have ${concertInvitations.length} new concert invitation(s)!';
+      notifyListeners();
+    }
+  }
+
+  bool acceptConcertInvitation(Concert concert) {
+    if (energy < 30) {
+      eventMessage = 'Not enough energy to accept concert invitation!';
+      return false;
+    }
+
+    concerts.add(concert);
+    concertInvitations.remove(concert);
+
+    eventMessage = 'Accepted concert invitation for ${concert.name}!';
+    notifyListeners();
+    return true;
+  }
+
+  bool performScheduledConcert(Concert concert) {
+    if (energy < 30 || concert.isCompleted) {
+      eventMessage = 'Cannot perform concert!';
+      return false;
+    }
+
+    energy -= 30;
+
+    // Calculate attendance based on fame and local popularity
+    double attendanceRate = 0.4; // Base 40% attendance
+
+    if (fame >= 300) attendanceRate += 0.2;
+    if (fame >= 500) attendanceRate += 0.2;
+    if (fame >= 1000) attendanceRate += 0.2;
+
+    // Add some randomness
+    attendanceRate += (Random().nextDouble() - 0.5) * 0.3;
+    attendanceRate = attendanceRate.clamp(0.2, 1.0);
+
+    concert.ticketsSold = (concert.capacity * attendanceRate).round();
+    concert.revenue = concert.ticketsSold * concert.ticketPrice;
+    concert.fansGained = (concert.ticketsSold * 0.1).round();
+    concert.isCompleted = true;
+
+    // Add earnings and fans
+    money += concert.revenue.round();
+    fans += concert.fansGained;
+    fame += (concert.fansGained * 0.1).round() + 5;
+
+    // Skill progression
+    charisma.addProgress(0.4);
+    vocals.addProgress(0.3);
+
+    // Update concert count
+    concertsPerformed++;
+
+    eventMessage =
+        'Concert performed! Earned \$${concert.revenue.round()} and gained ${concert.fansGained} fans!';
+    _addHappiness(4);
+    _addStress(3);
+    notifyListeners();
+    return true;
+  }
+
+  Tour? createTour({
+    required String tourName,
+    required List<Concert> tourConcerts,
+  }) {
+    if (!canGoOnTour || money < 5000) {
+      eventMessage = 'Cannot create tour: requirements not met!';
+      return null;
+    }
+
+    money -= 5000; // Tour setup costs
+
+    final tour = Tour(
+      name: tourName,
+      startDate: DateTime.now().add(const Duration(days: 7)),
+      endDate: DateTime.now().add(
+        Duration(days: 7 + (tourConcerts.length * 3)),
+      ),
+      concerts: tourConcerts,
+    );
+
+    tours.add(tour);
+    eventMessage =
+        'Created tour "$tourName" with ${tourConcerts.length} concerts!';
+    notifyListeners();
+    return tour;
+  }
+
+  bool startTour(Tour tour) {
+    if (activeTour != null || energy < 50) {
+      eventMessage = 'Cannot start tour!';
+      return false;
+    }
+
+    tour.isActive = true;
+    activeTour = tour;
+
+    eventMessage = 'Started tour "${tour.name}"!';
+    _addHappiness(5);
+    notifyListeners();
+    return true;
   }
 
   String createSocialMediaPost({
@@ -876,6 +1479,30 @@ class PlayerModel extends ChangeNotifier {
     // Automatic trait development
     _developTraitsAutomatically();
 
+    // Check for award shows at the end of the year
+    if (AwardSystem.isAwardSeason(week)) {
+      Map<AwardShow, List<Nomination>> awardResults = AwardSystem.runAwardShows(
+        this,
+      );
+      _processAwardResults(awardResults);
+    }
+
+    // Update song popularity and streaming daily
+    updateSongPopularity();
+
+    // Generate concert invitations based on popularity
+    if (Random().nextDouble() < 0.3) {
+      // 30% chance each week
+      generateConcertInvitations();
+    }
+
+    // Update vinyl sales
+    for (var vinyl in vinyls) {
+      int weeklySales = (fans * 0.01 + fame * 0.005).round().clamp(0, 50);
+      vinyl.unitsSold += weeklySales;
+      money += (weeklySales * vinyl.pricePerUnit).round();
+    }
+
     String jobIncomeText = currentJob != null
         ? ' (including \$${weeklyJobIncome} from ${currentJob})'
         : '';
@@ -883,6 +1510,63 @@ class PlayerModel extends ChangeNotifier {
         'New week! Earned \$$weeklyIncome from various sources$jobIncomeText';
     notifyListeners();
     saveData(); // Save data when week ends
+  }
+
+  // Process award show results and update player stats
+  void _processAwardResults(Map<AwardShow, List<Nomination>> awardResults) {
+    List<String> awardMessages = [];
+    int totalAwards = 0;
+    int totalNominations = 0;
+
+    for (var entry in awardResults.entries) {
+      AwardShow show = entry.key;
+      List<Nomination> nominations = entry.value;
+
+      String showName = show == AwardShow.grammys
+          ? "Grammy Awards"
+          : "American Music Awards";
+
+      for (var nomination in nominations) {
+        totalNominations++;
+        if (nomination.won) {
+          totalAwards++;
+          awardMessages.add(
+            "🏆 Won ${AwardSystem.getCategoryDisplayName(nomination.category)} at $showName!",
+          );
+
+          // Award benefits
+          fame += 50; // Major fame boost
+          money += 10000; // Prize money
+          happiness += 20; // Personal satisfaction
+          socialMediaFollowers += (fame * 0.1).round(); // More followers
+        } else {
+          awardMessages.add(
+            "🌟 Nominated for ${AwardSystem.getCategoryDisplayName(nomination.category)} at $showName",
+          );
+          fame += 10; // Nomination still gives fame
+          happiness += 5;
+        }
+      }
+    }
+
+    // Update event message with award results
+    if (awardMessages.isNotEmpty) {
+      String yearSummary = "🎊 AWARD SEASON $year RESULTS 🎊\n\n";
+      yearSummary += awardMessages.join('\n');
+
+      if (totalAwards > 0) {
+        yearSummary +=
+            "\n\n🎉 Congratulations! You won $totalAwards award(s) this year!";
+        if (totalAwards >= 3) {
+          yearSummary += "\n🌟 What an incredible year for your career!";
+        }
+      } else if (totalNominations > 0) {
+        yearSummary +=
+            "\n\n⭐ Great job getting $totalNominations nomination(s)! Keep working hard!";
+      }
+
+      eventMessage = yearSummary;
+    }
   }
 
   void clearEvent() {
@@ -927,16 +1611,48 @@ class PlayerModel extends ChangeNotifier {
           if (contact.type == 'producer') {
             songWriting.addProgress(0.3);
             fame += contact.influence * 10;
+
+            // Chance for collaborative album with producer
+            if (Random().nextBool() && albums.length < 10) {
+              String albumTitle = "Produced by ${contact.name}";
+              createCollaborativeAlbum(
+                albumTitle: albumTitle,
+                collaboratorName: contact.name,
+                collaboratorType: "producer",
+                genre: avatarStyle,
+                coverImagePath: null,
+              );
+              outcome =
+                  'Created collaborative album with producer ${contact.name}!';
+            } else {
+              outcome =
+                  'Successful collaboration with ${contact.name}! Your career benefits.';
+            }
           } else if (contact.type == 'musician') {
             charisma.addProgress(0.2);
             fans += contact.influence * 20;
+
+            // Chance for collaborative album with artist
+            if (Random().nextBool() && albums.length < 10) {
+              String albumTitle = "$artistName & ${contact.name}";
+              createCollaborativeAlbum(
+                albumTitle: albumTitle,
+                collaboratorName: contact.name,
+                collaboratorType: "artist",
+                genre: avatarStyle,
+                coverImagePath: null,
+              );
+              outcome = 'Created joint album with ${contact.name}!';
+            } else {
+              outcome =
+                  'Successful collaboration with ${contact.name}! Your career benefits.';
+            }
           } else if (contact.type == 'influencer') {
             virality.addProgress(0.4);
             socialMediaFollowers += contact.influence * 100;
+            outcome =
+                'Successful collaboration with ${contact.name}! Your career benefits.';
           }
-
-          outcome =
-              'Successful collaboration with ${contact.name}! Your career benefits.';
         } else {
           relationshipChange = Random().nextInt(10) + 5;
           outcome = '${contact.name} agreed to collaborate in the future.';
@@ -991,6 +1707,45 @@ class PlayerModel extends ChangeNotifier {
         } else {
           relationshipChange = Random().nextInt(10) + 5;
           outcome = '${contact.name} appreciated your humility.';
+        }
+        break;
+
+      case 'collab_album':
+        if (contact.relationshipLevel >= 30) {
+          if (money >= 1000 && energy >= 30) {
+            String albumTitle = "${artistName} & ${contact.name}";
+            String collaboratorType = contact.type == 'producer'
+                ? 'producer'
+                : 'artist';
+
+            bool success = createCollaborativeAlbum(
+              albumTitle: albumTitle,
+              collaboratorName: contact.name,
+              collaboratorType: collaboratorType,
+              genre: avatarStyle,
+              coverImagePath: null,
+            );
+
+            if (success) {
+              relationshipChange = Random().nextInt(30) + 20;
+              contact.hasCollabed = true;
+              contact.recentInteractions.add(
+                'Created collaborative album together',
+              );
+              outcome =
+                  'Successfully created collaborative album "$albumTitle" with ${contact.name}!';
+            } else {
+              outcome =
+                  'Failed to create collaborative album. Try again later.';
+            }
+          } else {
+            outcome =
+                'Not enough money (\$1,000) or energy (30) for a collaborative album!';
+          }
+        } else {
+          relationshipChange = Random().nextInt(10) + 5;
+          outcome =
+              '${contact.name} wants to build a stronger relationship first before making albums together.';
         }
         break;
 
@@ -1155,6 +1910,223 @@ class PlayerModel extends ChangeNotifier {
     return eventMessage!;
   }
 
+  // Group management methods
+  void createGroup(String groupName, String genre, List<String> memberNames) {
+    if (energy >= 20) {
+      energy -= 20;
+
+      List<String> allMembers = [artistName, ...memberNames];
+
+      final newGroup = Group(
+        name: groupName,
+        genre: genre,
+        formedDate: DateTime.now(),
+        members: allMembers,
+        leader: artistName,
+      );
+
+      groups.add(newGroup);
+      currentGroup = newGroup;
+
+      eventMessage =
+          'Created group "$groupName" with ${allMembers.length} members!';
+
+      // Boost fame for group creation
+      fame += 50;
+      fans += 100;
+
+      leadership.addProgress(0.4);
+      charisma.addProgress(0.3);
+      _addStress(5);
+
+      notifyListeners();
+    }
+  }
+
+  void joinGroup(Group group) {
+    if (!group.members.contains(artistName)) {
+      group.addMember(artistName);
+      groups.add(group);
+      currentGroup = group;
+
+      eventMessage = 'Joined group "${group.name}"!';
+
+      // Boost from joining established group
+      fame += 30;
+      fans += group.fanBase ~/ 10;
+
+      charisma.addProgress(0.2);
+      notifyListeners();
+    }
+  }
+
+  void leaveGroup(Group group) {
+    group.removeMember(artistName);
+    groups.removeWhere((g) => g.name == group.name);
+
+    if (currentGroup?.name == group.name) {
+      currentGroup = null;
+    }
+
+    eventMessage = 'Left group "${group.name}"';
+
+    // Small penalty for leaving
+    fans -= 50;
+    _addStress(3);
+
+    notifyListeners();
+  }
+
+  void createGroupSong(String title, String genre, Group group) {
+    if (energy >= 15 && currentGroup != null) {
+      energy -= 15;
+
+      int baseQuality = songWriting.level * 5;
+      int collaborationBonus =
+          group.members.length * 10; // Bonus for collaboration
+      int groupFameBonus = group.fame ~/ 50;
+
+      int songQuality = (baseQuality + collaborationBonus + groupFameBonus)
+          .clamp(10, 100);
+
+      final song = Song(
+        title: title,
+        genre: genre,
+        quality: songQuality,
+        releaseDate: DateTime.now(),
+        groupName: group.name,
+        isGroupSong: true,
+      );
+
+      songs.add(song);
+      group.addGroupSong(song);
+
+      eventMessage =
+          'Created group song "$title" with ${group.name}! Quality: $songQuality%';
+
+      songWriting.addProgress(0.4);
+      leadership.addProgress(0.2);
+      _addStress(3);
+
+      notifyListeners();
+    }
+  }
+
+  void publishSong(Song song) {
+    if (!song.isPublished && song.isRecorded) {
+      song.publish();
+
+      // Initial boost based on player fame and song quality
+      int initialStreams = ((fame * song.quality / 10).clamp(
+        100,
+        10000,
+      )).round();
+      song.popularity.streams = initialStreams;
+      song.popularity.views = (initialStreams * 0.8).round();
+
+      eventMessage =
+          'Published "${song.title}"! Initial streams: ${song.popularity.streams}';
+
+      // Small fame boost for publishing
+      fame += 10;
+      fans += 25;
+
+      marketing.addProgress(0.3);
+      notifyListeners();
+    }
+  }
+
+  void updateSongPopularity() {
+    // Update all published songs daily
+    for (var song in songs.where((s) => s.isPublished)) {
+      song.updateDailyStats(fame);
+
+      // Check for milestones
+      if (song.isViral && !song.popularity.platforms.contains('Trending')) {
+        song.popularity.platforms.add('Trending');
+        eventMessage = '"${song.title}" has gone VIRAL! 🔥';
+        fame += 500;
+        fans += 10000;
+      } else if (song.isHit && !song.popularity.platforms.contains('Popular')) {
+        song.popularity.platforms.add('Popular');
+        eventMessage = '"${song.title}" is now a HIT! 🎵';
+        fame += 200;
+        fans += 2000;
+      } else if (song.popularity.isPopular &&
+          !song.popularity.platforms.contains('Rising')) {
+        song.popularity.platforms.add('Rising');
+        eventMessage = '"${song.title}" is gaining popularity! 📈';
+        fame += 50;
+        fans += 500;
+      }
+    }
+
+    // Update group stats if in a group
+    if (currentGroup != null) {
+      currentGroup!.updateGroupStats();
+    }
+
+    notifyListeners();
+  }
+
+  void promoteOnSocialMedia(Song song) {
+    if (energy >= 10 && song.isPublished) {
+      energy -= 10;
+
+      // Boost song popularity through social media promotion
+      int promotionBoost = (socialMediaFollowers / 100 + marketing.level * 10)
+          .round();
+      song.popularity.streams += promotionBoost;
+      song.popularity.views += (promotionBoost * 1.2).round();
+
+      // Gain followers from promotion
+      socialMediaFollowers += Random().nextInt(100) + 20;
+
+      eventMessage =
+          'Promoted "${song.title}" on social media! +$promotionBoost streams';
+
+      marketing.addProgress(0.3);
+      virality.addProgress(0.2);
+
+      notifyListeners();
+    }
+  }
+
+  List<Group> get availableGroupsToJoin {
+    // Generate some available groups based on player's genre preferences and fame
+    List<Group> availableGroups = [];
+
+    final groupNames = [
+      'The Rising Stars',
+      'Midnight Collective',
+      'Sound Revolution',
+      'Urban Legends',
+      'Electric Dreams',
+      'Harmony Squad',
+    ];
+    final groupGenres = ['Pop', 'Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Rage'];
+
+    for (int i = 0; i < 3; i++) {
+      if (!groups.any((g) => g.name == groupNames[i])) {
+        availableGroups.add(
+          Group(
+            name: groupNames[i],
+            genre: groupGenres[i % groupGenres.length],
+            formedDate: DateTime.now().subtract(
+              Duration(days: Random().nextInt(365)),
+            ),
+            members: ['Member 1', 'Member 2'],
+            leader: 'Member 1',
+            fame: Random().nextInt(1000) + 100,
+            fanBase: Random().nextInt(5000) + 500,
+          ),
+        );
+      }
+    }
+
+    return availableGroups;
+  }
+
   // Persistence methods
   Future<void> saveData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -1163,6 +2135,7 @@ class PlayerModel extends ChangeNotifier {
     await prefs.setString('playerName', playerName);
     await prefs.setString('careerType', careerType);
     await prefs.setString('gender', gender);
+    await prefs.setInt('age', age);
     await prefs.setString('avatarStyle', avatarStyle);
     await prefs.setString('avatarSkin', avatarSkin);
     await prefs.setString('avatarHair', avatarHair);
@@ -1213,15 +2186,68 @@ class PlayerModel extends ChangeNotifier {
     await prefs.setInt('marketingLevel', marketing.level);
     await prefs.setDouble('marketingProgress', marketing.progress);
 
-    // Save songs
-    List<String> songTitles = songs.map((song) => song.title).toList();
-    await prefs.setStringList('songTitles', songTitles);
+    // Save songs with detailed information
+    List<String> songData = songs.map((song) {
+      return '${song.title}|${song.genre}|${song.quality}|${song.isRecorded}|${song.isPublished}|${song.plays}|${song.likes}|${song.revenue}|${song.releaseDate.millisecondsSinceEpoch}|${song.publishDate?.millisecondsSinceEpoch ?? 0}|${song.albumTitle ?? ""}|${song.groupName ?? ""}|${song.isGroupSong}|${song.popularity.streams}|${song.popularity.views}|${song.popularity.dailyGrowth}|${song.popularity.trendingScore}|${song.popularity.peakPosition}|${song.popularity.platforms.join(",")}|${song.coverImagePath ?? ""}';
+    }).toList();
+    await prefs.setStringList('songData', songData);
+
+    // Save groups
+    List<String> groupData = groups.map((group) {
+      return '${group.name}|${group.genre}|${group.formedDate.millisecondsSinceEpoch}|${group.members.join(",")}|${group.leader}|${group.fame}|${group.fanBase}|${group.groupRevenue}';
+    }).toList();
+    await prefs.setStringList('groupData', groupData);
+
+    // Save current group
+    await prefs.setString('currentGroupName', currentGroup?.name ?? '');
+
+    // Save albums
+    List<String> albumData = albums.map((album) {
+      return '${album.title}|${album.genre}|${album.releaseDate.millisecondsSinceEpoch}|${album.isReleased}|${album.totalPlays}|${album.totalRevenue}|${album.collaborators.join(",")}|${album.producedBy ?? ""}|${album.isCollaborativeAlbum}|${album.coverImagePath ?? ""}|${album.hasVinyl}|${album.vinylReleaseDate?.millisecondsSinceEpoch ?? 0}|${album.vinylSales}';
+    }).toList();
+    await prefs.setStringList('albumData', albumData);
+
+    // Save vinyls
+    List<String> vinylData = vinyls.map((vinyl) {
+      return '${vinyl.albumTitle}|${vinyl.releaseDate.millisecondsSinceEpoch}|${vinyl.unitsSold}|${vinyl.pricePerUnit}|${vinyl.specialEdition ?? ""}';
+    }).toList();
+    await prefs.setStringList('vinylData', vinylData);
+
+    // Save concerts
+    List<String> concertData = concerts.map((concert) {
+      return '${concert.name}|${concert.venue}|${concert.city}|${concert.date.millisecondsSinceEpoch}|${concert.type}|${concert.capacity}|${concert.ticketsSold}|${concert.ticketPrice}|${concert.isCompleted}|${concert.fansGained}|${concert.revenue}';
+    }).toList();
+    await prefs.setStringList('concertData', concertData);
+
+    // Save tours
+    List<String> tourData = tours.map((tour) {
+      return '${tour.name}|${tour.startDate.millisecondsSinceEpoch}|${tour.endDate.millisecondsSinceEpoch}|${tour.isActive}|${tour.isCompleted}|${tour.totalRevenue}|${tour.totalFansGained}';
+    }).toList();
+    await prefs.setStringList('tourData', tourData);
+
+    // Save active tour
+    await prefs.setString('activeTourName', activeTour?.name ?? '');
+
+    // Save concert invitations
+    List<String> invitationData = concertInvitations.map((concert) {
+      return '${concert.name}|${concert.venue}|${concert.city}|${concert.date.millisecondsSinceEpoch}|${concert.type}|${concert.capacity}|${concert.ticketPrice}';
+    }).toList();
+    await prefs.setStringList('concertInvitations', invitationData);
 
     // Save relationships
     await prefs.setInt('familyRelationship', familyRelationship);
     await prefs.setInt('friendsRelationship', friendsRelationship);
     await prefs.setBool('hasPartner', hasPartner);
     await prefs.setInt('partnerRelationship', partnerRelationship);
+
+    // Save awards
+    List<String> awardJsonList = awards
+        .map(
+          (award) =>
+              '${award.show.toString()}|${award.category.toString()}|${award.year}|${award.week}|${award.description}',
+        )
+        .toList();
+    await prefs.setStringList('awards', awardJsonList);
   }
 
   Future<void> loadData() async {
@@ -1231,6 +2257,7 @@ class PlayerModel extends ChangeNotifier {
     playerName = prefs.getString('playerName') ?? '';
     careerType = prefs.getString('careerType') ?? 'artist';
     gender = prefs.getString('gender') ?? 'male';
+    age = prefs.getInt('age') ?? 18;
     avatarStyle = prefs.getString('avatarStyle') ?? 'rapper';
     avatarSkin = prefs.getString('avatarSkin') ?? '1';
     avatarHair = prefs.getString('avatarHair') ?? '1';
@@ -1245,7 +2272,7 @@ class PlayerModel extends ChangeNotifier {
     energy = prefs.getInt('energy') ?? 100;
     maxEnergy = prefs.getInt('maxEnergy') ?? 100;
     week = prefs.getInt('week') ?? 1;
-    year = prefs.getInt('year') ?? 2023;
+    year = prefs.getInt('year') ?? 2025;
     fans = prefs.getInt('fans') ?? 0;
     fame = prefs.getInt('fame') ?? 0;
     happiness = prefs.getInt('happiness') ?? 50;
@@ -1282,6 +2309,280 @@ class PlayerModel extends ChangeNotifier {
     hasPartner = prefs.getBool('hasPartner') ?? false;
     partnerRelationship = prefs.getInt('partnerRelationship') ?? 0;
 
+    // Load songs
+    List<String>? songDataList = prefs.getStringList('songData');
+    songs.clear();
+    if (songDataList != null) {
+      for (String songInfo in songDataList) {
+        List<String> parts = songInfo.split('|');
+        if (parts.length >= 19) {
+          try {
+            List<String> platforms = parts[18].isEmpty
+                ? ['Independent']
+                : parts[18].split(',');
+            Song song = Song(
+              title: parts[0],
+              genre: parts[1],
+              quality: int.parse(parts[2]),
+              isRecorded: parts[3] == 'true',
+              isPublished: parts[4] == 'true',
+              plays: int.parse(parts[5]),
+              likes: int.parse(parts[6]),
+              revenue: double.parse(parts[7]),
+              releaseDate: DateTime.fromMillisecondsSinceEpoch(
+                int.parse(parts[8]),
+              ),
+              publishDate: parts[9] != '0'
+                  ? DateTime.fromMillisecondsSinceEpoch(int.parse(parts[9]))
+                  : null,
+              albumTitle: parts[10].isEmpty ? null : parts[10],
+              groupName: parts[11].isEmpty ? null : parts[11],
+              isGroupSong: parts[12] == 'true',
+              popularity: SongPopularity(
+                streams: int.parse(parts[13]),
+                views: int.parse(parts[14]),
+                dailyGrowth: int.parse(parts[15]),
+                trendingScore: double.parse(parts[16]),
+                peakPosition: int.parse(parts[17]),
+                platforms: platforms,
+              ),
+              coverImagePath: parts.length > 19 && parts[19].isNotEmpty
+                  ? parts[19]
+                  : null,
+            );
+            songs.add(song);
+          } catch (e) {
+            // Skip invalid song data
+          }
+        }
+      }
+    }
+
+    // Load groups
+    List<String>? groupDataList = prefs.getStringList('groupData');
+    groups.clear();
+    if (groupDataList != null) {
+      for (String groupInfo in groupDataList) {
+        List<String> parts = groupInfo.split('|');
+        if (parts.length >= 8) {
+          try {
+            Group group = Group(
+              name: parts[0],
+              genre: parts[1],
+              formedDate: DateTime.fromMillisecondsSinceEpoch(
+                int.parse(parts[2]),
+              ),
+              members: parts[3].split(','),
+              leader: parts[4],
+              fame: int.parse(parts[5]),
+              fanBase: int.parse(parts[6]),
+              groupRevenue: double.parse(parts[7]),
+            );
+            groups.add(group);
+          } catch (e) {
+            // Skip invalid group data
+          }
+        }
+      }
+    }
+
+    // Load current group
+    String currentGroupName = prefs.getString('currentGroupName') ?? '';
+    currentGroup = null;
+    if (currentGroupName.isNotEmpty) {
+      try {
+        currentGroup = groups.firstWhere((g) => g.name == currentGroupName);
+      } catch (e) {
+        currentGroup = null;
+      }
+    }
+
+    // Load albums
+    List<String>? albumDataList = prefs.getStringList('albumData');
+    albums.clear();
+    if (albumDataList != null) {
+      for (String albumInfo in albumDataList) {
+        List<String> parts = albumInfo.split('|');
+        if (parts.length >= 9) {
+          try {
+            Album album = Album(
+              title: parts[0],
+              genre: parts[1],
+              releaseDate: DateTime.fromMillisecondsSinceEpoch(
+                int.parse(parts[2]),
+              ),
+              isReleased: parts[3] == 'true',
+              totalPlays: int.parse(parts[4]),
+              totalRevenue: double.parse(parts[5]),
+              collaborators: parts[6]
+                  .split(',')
+                  .where((s) => s.isNotEmpty)
+                  .toList(),
+              producedBy: parts[7].isEmpty ? null : parts[7],
+              isCollaborativeAlbum: parts[8] == 'true',
+              coverImagePath: parts.length > 9 && parts[9].isNotEmpty
+                  ? parts[9]
+                  : null,
+              hasVinyl: parts.length > 10 ? parts[10] == 'true' : false,
+              vinylReleaseDate: parts.length > 11 && parts[11] != '0'
+                  ? DateTime.fromMillisecondsSinceEpoch(int.parse(parts[11]))
+                  : null,
+              vinylSales: parts.length > 12 ? int.parse(parts[12]) : 0,
+            );
+            albums.add(album);
+          } catch (e) {
+            // Skip invalid album data
+          }
+        }
+      }
+    }
+
+    // Load vinyls
+    List<String>? vinylDataList = prefs.getStringList('vinylData');
+    vinyls.clear();
+    if (vinylDataList != null) {
+      for (String vinylInfo in vinylDataList) {
+        List<String> parts = vinylInfo.split('|');
+        if (parts.length >= 5) {
+          try {
+            Vinyl vinyl = Vinyl(
+              albumTitle: parts[0],
+              releaseDate: DateTime.fromMillisecondsSinceEpoch(
+                int.parse(parts[1]),
+              ),
+              unitsSold: int.parse(parts[2]),
+              pricePerUnit: double.parse(parts[3]),
+              specialEdition: parts[4].isEmpty ? null : parts[4],
+            );
+            vinyls.add(vinyl);
+          } catch (e) {
+            // Skip invalid vinyl data
+          }
+        }
+      }
+    }
+
+    // Load concerts
+    List<String>? concertDataList = prefs.getStringList('concertData');
+    concerts.clear();
+    if (concertDataList != null) {
+      for (String concertInfo in concertDataList) {
+        List<String> parts = concertInfo.split('|');
+        if (parts.length >= 11) {
+          try {
+            Concert concert = Concert(
+              name: parts[0],
+              venue: parts[1],
+              city: parts[2],
+              date: DateTime.fromMillisecondsSinceEpoch(int.parse(parts[3])),
+              type: parts[4],
+              capacity: int.parse(parts[5]),
+              ticketsSold: int.parse(parts[6]),
+              ticketPrice: double.parse(parts[7]),
+              isCompleted: parts[8] == 'true',
+              fansGained: int.parse(parts[9]),
+              revenue: double.parse(parts[10]),
+            );
+            concerts.add(concert);
+          } catch (e) {
+            // Skip invalid concert data
+          }
+        }
+      }
+    }
+
+    // Load tours
+    List<String>? tourDataList = prefs.getStringList('tourData');
+    tours.clear();
+    if (tourDataList != null) {
+      for (String tourInfo in tourDataList) {
+        List<String> parts = tourInfo.split('|');
+        if (parts.length >= 7) {
+          try {
+            Tour tour = Tour(
+              name: parts[0],
+              startDate: DateTime.fromMillisecondsSinceEpoch(
+                int.parse(parts[1]),
+              ),
+              endDate: DateTime.fromMillisecondsSinceEpoch(int.parse(parts[2])),
+              isActive: parts[3] == 'true',
+              isCompleted: parts[4] == 'true',
+              totalRevenue: double.parse(parts[5]),
+              totalFansGained: int.parse(parts[6]),
+            );
+            tours.add(tour);
+          } catch (e) {
+            // Skip invalid tour data
+          }
+        }
+      }
+    }
+
+    // Load active tour
+    String activeTourName = prefs.getString('activeTourName') ?? '';
+    activeTour = null;
+    if (activeTourName.isNotEmpty) {
+      try {
+        activeTour = tours.firstWhere((t) => t.name == activeTourName);
+      } catch (e) {
+        activeTour = null;
+      }
+    }
+
+    // Load concert invitations
+    List<String>? invitationDataList = prefs.getStringList(
+      'concertInvitations',
+    );
+    concertInvitations.clear();
+    if (invitationDataList != null) {
+      for (String invitationInfo in invitationDataList) {
+        List<String> parts = invitationInfo.split('|');
+        if (parts.length >= 7) {
+          try {
+            Concert invitation = Concert(
+              name: parts[0],
+              venue: parts[1],
+              city: parts[2],
+              date: DateTime.fromMillisecondsSinceEpoch(int.parse(parts[3])),
+              type: parts[4],
+              capacity: int.parse(parts[5]),
+              ticketPrice: double.parse(parts[6]),
+            );
+            concertInvitations.add(invitation);
+          } catch (e) {
+            // Skip invalid invitation data
+          }
+        }
+      }
+    }
+
+    // Load awards
+    List<String>? awardJsonList = prefs.getStringList('awards');
+    awards.clear();
+    if (awardJsonList != null) {
+      for (String awardData in awardJsonList) {
+        List<String> parts = awardData.split('|');
+        if (parts.length >= 5) {
+          try {
+            Award award = Award(
+              show: AwardShow.values.firstWhere(
+                (e) => e.toString() == parts[0],
+              ),
+              category: AwardCategory.values.firstWhere(
+                (e) => e.toString() == parts[1],
+              ),
+              year: int.parse(parts[2]),
+              week: int.parse(parts[3]),
+              description: parts[4],
+            );
+            awards.add(award);
+          } catch (e) {
+            // Skip invalid award data
+          }
+        }
+      }
+    }
+
     notifyListeners();
   }
 
@@ -1310,7 +2611,8 @@ class PlayerModel extends ChangeNotifier {
     energy = 100;
     maxEnergy = 100;
     week = 1;
-    year = 2023;
+    year = 2025;
+    age = 18;
     fans = 0;
     fame = 0;
     happiness = 50;
@@ -1324,7 +2626,10 @@ class PlayerModel extends ChangeNotifier {
 
     songs.clear();
     albums.clear();
+    groups.clear();
+    currentGroup = null;
     contacts.clear();
+    awards.clear();
 
     familyRelationship = 50;
     friendsRelationship = 50;

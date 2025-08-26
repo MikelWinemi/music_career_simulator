@@ -30,73 +30,89 @@ class GameScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           // Money and Energy
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.attach_money,
-                                    color: AppTheme.accentGold,
-                                    size: 20,
-                                  ),
-                                  Text(
-                                    '${player.money}',
-                                    style: AppTheme.titleLarge.copyWith(
-                                      color: AppTheme.accentGold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.flash_on,
-                                    color: AppTheme.energyRed,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${player.energy}/${player.maxEnergy}',
-                                    style: AppTheme.bodyLarge.copyWith(
-                                      color: AppTheme.energyRed,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-
-                          // End Week button and date
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              ElevatedButton(
-                                onPressed: player.endWeek,
-                                style: AppTheme.primaryButtonStyle,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
+                          Flexible(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
                                   children: [
-                                    const Icon(Icons.skip_next, size: 16),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'END WEEK',
-                                      style: AppTheme.bodyMedium.copyWith(
-                                        color: AppTheme.textPrimary,
-                                        fontWeight: FontWeight.bold,
+                                    const Icon(
+                                      Icons.attach_money,
+                                      color: AppTheme.accentGold,
+                                      size: 20,
+                                    ),
+                                    Flexible(
+                                      child: Text(
+                                        '${player.money}',
+                                        style: AppTheme.titleLarge.copyWith(
+                                          color: AppTheme.accentGold,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Week ${player.week}, ${player.year}',
-                                style: AppTheme.bodyMedium,
-                              ),
-                            ],
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.flash_on,
+                                      color: AppTheme.energyRed,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        '${player.energy}/${player.maxEnergy}',
+                                        style: AppTheme.bodyLarge.copyWith(
+                                          color: AppTheme.energyRed,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // End Week button and date
+                          Flexible(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                ElevatedButton(
+                                  onPressed: player.endWeek,
+                                  style: AppTheme.primaryButtonStyle,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.skip_next, size: 16),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          'END WEEK',
+                                          style: AppTheme.bodyMedium.copyWith(
+                                            color: AppTheme.textPrimary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Week ${player.week}, ${player.year}',
+                                  style: AppTheme.bodyMedium,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -156,15 +172,19 @@ class GameScreen extends StatelessWidget {
                                   size: 24,
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
-                                  _getTotalSkillLevel() >= 100
-                                      ? 'MASTER ARTIST!'
-                                      : 'TOTAL SKILL LEVEL',
-                                  style: AppTheme.titleMedium.copyWith(
-                                    color: _getTotalSkillLevel() >= 100
-                                        ? const Color(0xFFFFD700)
-                                        : AppTheme.accentGold,
-                                    fontWeight: FontWeight.bold,
+                                Flexible(
+                                  child: Text(
+                                    _getTotalSkillLevel() >= 100
+                                        ? 'MASTER ARTIST!'
+                                        : 'TOTAL SKILL LEVEL',
+                                    style: AppTheme.titleMedium.copyWith(
+                                      color: _getTotalSkillLevel() >= 100
+                                          ? const Color(0xFFFFD700)
+                                          : AppTheme.accentGold,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
                                   ),
                                 ),
                               ],
@@ -244,10 +264,13 @@ class GameScreen extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  Text(
-                                    'ARTIST TRAITS',
-                                    style: AppTheme.titleMedium.copyWith(
-                                      color: AppTheme.accentGold,
+                                  Flexible(
+                                    child: Text(
+                                      'ARTIST TRAITS',
+                                      style: AppTheme.titleMedium.copyWith(
+                                        color: AppTheme.accentGold,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
@@ -295,10 +318,13 @@ class GameScreen extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  Text(
-                                    'BUSINESS TRAITS',
-                                    style: AppTheme.titleMedium.copyWith(
-                                      color: AppTheme.accentGold,
+                                  Flexible(
+                                    child: Text(
+                                      'BUSINESS TRAITS',
+                                      style: AppTheme.titleMedium.copyWith(
+                                        color: AppTheme.accentGold,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],

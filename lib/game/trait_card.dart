@@ -48,20 +48,24 @@ class TraitCard extends StatelessWidget {
 
           // Trait name and progress bar
           Expanded(
+            flex: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Text(
-                      trait.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    Flexible(
+                      child: Text(
+                        trait.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     Text(
                       '${trait.level}/${trait.maxLevel}',
                       style: TextStyle(
@@ -97,18 +101,21 @@ class TraitCard extends StatelessWidget {
           const SizedBox(width: 16),
 
           // Energy cost
-          Row(
-            children: [
-              const Icon(Icons.flash_on, color: Colors.red, size: 16),
-              Text(
-                '${trait.energyCost}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.flash_on, color: Colors.red, size: 16),
+                Text(
+                  '${trait.energyCost}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
 
           const SizedBox(width: 16),

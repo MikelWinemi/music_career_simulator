@@ -39,7 +39,7 @@ class _GameWrapperState extends State<GameWrapper> {
         _inCharacterCreation = false;
       } else {
         _inGame = false;
-        _inCharacterCreation = false;
+        _inCharacterCreation = true; // Start with character creation
       }
     });
   }

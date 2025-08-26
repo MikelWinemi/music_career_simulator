@@ -4,6 +4,10 @@ import 'ui/app_theme.dart';
 import 'social_media_screen.dart';
 import 'relationship_management_screen.dart';
 import 'song_creation_screen.dart';
+import 'collaborative_album_screen.dart';
+import 'group_management_screen.dart';
+import 'vinyl_management_screen.dart';
+import 'touring_screen.dart';
 
 class MusicCareerScreen extends StatelessWidget {
   final PlayerModel player;
@@ -157,25 +161,33 @@ class MusicCareerScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _buildStatCard(
-                            'Fans',
-                            player.fans.toString(),
-                            Icons.people,
+                          Flexible(
+                            child: _buildStatCard(
+                              'Fans',
+                              player.fans.toString(),
+                              Icons.people,
+                            ),
                           ),
-                          _buildStatCard(
-                            'Fame',
-                            player.fame.toString(),
-                            Icons.star,
+                          Flexible(
+                            child: _buildStatCard(
+                              'Fame',
+                              player.fame.toString(),
+                              Icons.star,
+                            ),
                           ),
-                          _buildStatCard(
-                            'Songs',
-                            player.songs.length.toString(),
-                            Icons.music_note,
+                          Flexible(
+                            child: _buildStatCard(
+                              'Songs',
+                              player.songs.length.toString(),
+                              Icons.music_note,
+                            ),
                           ),
-                          _buildStatCard(
-                            'Shows',
-                            player.concertsPerformed.toString(),
-                            Icons.mic,
+                          Flexible(
+                            child: _buildStatCard(
+                              'Shows',
+                              player.concertsPerformed.toString(),
+                              Icons.mic,
+                            ),
                           ),
                         ],
                       ),
@@ -255,6 +267,33 @@ class MusicCareerScreen extends StatelessWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: _buildActionButton(
+                                'Collaborate',
+                                Icons.people,
+                                AppTheme.accentGold,
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        CollaborativeAlbumScreen(
+                                          player: player,
+                                          onAlbumCreated: () =>
+                                              Navigator.pop(context),
+                                        ),
+                                  ),
+                                ),
+                                energyCost: 30,
+                                moneyCost: 1000,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildActionButton(
                                 'Concert',
                                 Icons.theater_comedy,
                                 AppTheme.warningOrange,
@@ -272,11 +311,49 @@ class MusicCareerScreen extends StatelessWidget {
                           children: [
                             Expanded(
                               child: _buildActionButton(
+                                'Vinyl Production',
+                                Icons.album,
+                                const Color(0xFF10B981),
+                                () => _navigateToVinylManagement(context),
+                                energyCost: 0,
+                                requirement: 'Albums to press',
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildActionButton(
+                                'Touring',
+                                Icons.mic_external_on,
+                                const Color(0xFFF59E0B),
+                                () => _navigateToTouring(context),
+                                energyCost: 0,
+                                requirement: 'Fame: 50+',
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildActionButton(
                                 'Social Media',
                                 Icons.share,
                                 const Color(0xFF3B82F6),
                                 () => _navigateToSocialMedia(context),
                                 energyCost: 5,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildActionButton(
+                                'Groups',
+                                Icons.group,
+                                const Color(0xFF8B5CF6),
+                                () => _navigateToGroups(context),
+                                energyCost: 0,
                               ),
                             ),
                           ],
@@ -381,19 +458,34 @@ class MusicCareerScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            value,
+            _formatStatValue(value),
             style: AppTheme.titleMedium.copyWith(
               color: AppTheme.accentGold,
               fontWeight: FontWeight.bold,
             ),
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
           ),
           Text(
             label,
             style: AppTheme.bodySmall.copyWith(color: AppTheme.textSecondary),
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
+  }
+
+  String _formatStatValue(String value) {
+    final intValue = int.tryParse(value) ?? 0;
+    if (intValue >= 1000000) {
+      return '${(intValue / 1000000).toStringAsFixed(1)}M';
+    } else if (intValue >= 1000) {
+      return '${(intValue / 1000).toStringAsFixed(0)}K';
+    } else {
+      return value;
+    }
   }
 
   Widget _buildMoodBar(String label, int value, Color color) {
@@ -496,36 +588,46 @@ class MusicCareerScreen extends StatelessWidget {
             ),
             if (energyCost > 0 || moneyCost > 0) ...[
               const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Wrap(
+                alignment: WrapAlignment.center,
                 children: [
                   if (energyCost > 0) ...[
-                    const Icon(
-                      Icons.flash_on,
-                      color: AppTheme.energyRed,
-                      size: 12,
-                    ),
-                    Text(
-                      '$energyCost',
-                      style: AppTheme.bodySmall.copyWith(
-                        color: AppTheme.energyRed,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.flash_on,
+                          color: AppTheme.energyRed,
+                          size: 12,
+                        ),
+                        Text(
+                          '$energyCost',
+                          style: AppTheme.bodySmall.copyWith(
+                            color: AppTheme.energyRed,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                   if (moneyCost > 0) ...[
                     if (energyCost > 0) const SizedBox(width: 8),
-                    const Icon(
-                      Icons.attach_money,
-                      color: AppTheme.accentGold,
-                      size: 12,
-                    ),
-                    Text(
-                      '$moneyCost',
-                      style: AppTheme.bodySmall.copyWith(
-                        color: AppTheme.accentGold,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.attach_money,
+                          color: AppTheme.accentGold,
+                          size: 12,
+                        ),
+                        Text(
+                          '$moneyCost',
+                          style: AppTheme.bodySmall.copyWith(
+                            color: AppTheme.accentGold,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ],
@@ -563,6 +665,31 @@ class MusicCareerScreen extends StatelessWidget {
       MaterialPageRoute(
         builder: (context) => RelationshipManagementScreen(player: player),
       ),
+    );
+  }
+
+  void _navigateToGroups(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GroupManagementScreen(player: player),
+      ),
+    );
+  }
+
+  void _navigateToVinylManagement(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VinylManagementScreen(player: player),
+      ),
+    );
+  }
+
+  void _navigateToTouring(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => TouringScreen(player: player)),
     );
   }
 }

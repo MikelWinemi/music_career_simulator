@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'player_model.dart';
 import 'ui/app_theme.dart';
+import 'awards_screen.dart';
 
 class CareerProgressScreen extends StatelessWidget {
   final PlayerModel player;
@@ -155,6 +156,35 @@ class CareerProgressScreen extends StatelessWidget {
                               'Social Media Activity',
                               player.socialMediaFollowers,
                               500,
+                            ),
+                            const SizedBox(height: 16),
+                            // Awards button
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          AwardsScreen(player: player),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.emoji_events),
+                                label: Text(
+                                  player.awards.isEmpty
+                                      ? 'View Awards (None Yet)'
+                                      : 'View Awards (${player.awards.length})',
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.accentGold,
+                                  foregroundColor: Colors.black,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
