@@ -153,7 +153,9 @@ class ImageManager {
                         type: type,
                         name: name,
                       );
-                      Navigator.pop(context, imagePath);
+                      if (context.mounted) {
+                        Navigator.pop(context, imagePath);
+                      }
                     },
                     icon: const Icon(Icons.photo_library),
                     label: const Text('Gallery'),
@@ -173,7 +175,9 @@ class ImageManager {
                         type: type,
                         name: name,
                       );
-                      Navigator.pop(context, imagePath);
+                      if (context.mounted) {
+                        Navigator.pop(context, imagePath);
+                      }
                     },
                     icon: const Icon(Icons.camera_alt),
                     label: const Text('Camera'),

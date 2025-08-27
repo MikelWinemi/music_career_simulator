@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'player_model.dart';
 import 'ui/app_theme.dart';
+import 'awards_screen.dart';
 
 class SocialMediaScreen extends StatefulWidget {
   final PlayerModel player;
@@ -385,7 +386,21 @@ class _SocialMediaScreenState extends State<SocialMediaScreen> {
                         child: ElevatedButton(
                           onPressed: () {
                             widget.player.endWeek();
-                            Navigator.pop(context);
+
+                            // Check if awards were just received and show awards screen
+                            if (widget.player.hasNewAwards) {
+                              widget.player.clearNewAwardsFlag();
+                              Navigator.pop(context); // Pop this screen first
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      AwardsScreen(player: widget.player),
+                                ),
+                              );
+                            } else {
+                              Navigator.pop(context);
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.accentGold,

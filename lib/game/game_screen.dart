@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'player_model.dart';
 import 'trait_card.dart';
 import 'ui/app_theme.dart';
+import 'awards_screen.dart';
 
 class GameScreen extends StatelessWidget {
   final PlayerModel player;
@@ -85,7 +86,7 @@ class GameScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 ElevatedButton(
-                                  onPressed: player.endWeek,
+                                  onPressed: () => _handleEndWeek(context),
                                   style: AppTheme.primaryButtonStyle,
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -365,5 +366,18 @@ class GameScreen extends StatelessWidget {
       total += trait.level.round();
     }
     return total;
+  }
+
+  void _handleEndWeek(BuildContext context) {
+    player.endWeek();
+
+    // Check if awards were just received and show awards screen
+    if (player.hasNewAwards) {
+      player.clearNewAwardsFlag();
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => AwardsScreen(player: player)),
+      );
+    }
   }
 }

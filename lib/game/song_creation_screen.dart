@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'player_model.dart';
 import 'ui/app_theme.dart';
 import 'ui/image_manager.dart';
+import 'awards_screen.dart';
 
 class SongCreationScreen extends StatefulWidget {
   final PlayerModel player;
@@ -31,6 +32,10 @@ class _SongCreationScreenState extends State<SongCreationScreen> {
   String? _selectedExistingAlbum;
   String? _selectedCoverImagePath;
   String? _selectedAlbumCoverImagePath;
+
+  // Quality investment options
+  int _energyInvestment = 0; // Extra energy to invest (0-20)
+  int _moneyInvestment = 0; // Money to invest (0-5000)
 
   final List<String> _genres = [
     'Pop',
@@ -373,6 +378,189 @@ class _SongCreationScreenState extends State<SongCreationScreen> {
                               'Optional: Add a cover image to make your song stand out',
                               style: AppTheme.bodySmall.copyWith(
                                 color: AppTheme.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Quality Investment Section
+                      Container(
+                        decoration: AppTheme.cardDecoration,
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Quality Investment',
+                              style: AppTheme.titleMedium.copyWith(
+                                color: AppTheme.accentGold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Invest extra energy or money to improve song quality',
+                              style: AppTheme.bodySmall.copyWith(
+                                color: AppTheme.textMuted,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Energy Investment
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.flash_on,
+                                      color: AppTheme.energyRed,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Extra Energy: $_energyInvestment',
+                                      style: AppTheme.bodyMedium.copyWith(
+                                        color: AppTheme.energyRed,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      '+${(_energyInvestment * 2)}% Quality',
+                                      style: AppTheme.bodySmall.copyWith(
+                                        color: AppTheme.successGreen,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Slider(
+                                  value: _energyInvestment.toDouble(),
+                                  min: 0,
+                                  max: 20,
+                                  divisions: 20,
+                                  activeColor: AppTheme.energyRed,
+                                  inactiveColor: AppTheme.energyRed.withOpacity(
+                                    0.3,
+                                  ),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _energyInvestment = value.toInt();
+                                    });
+                                  },
+                                ),
+                                Text(
+                                  'Available Energy: ${widget.player.energy - 10 - _energyInvestment}',
+                                  style: AppTheme.bodySmall.copyWith(
+                                    color: AppTheme.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Studio Investment Packages
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.store,
+                                      color: AppTheme.accentGold,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Studio Investment Packages',
+                                      style: AppTheme.bodyMedium.copyWith(
+                                        color: AppTheme.accentGold,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+
+                                // Studio Package Options
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    _buildStudioPackage(
+                                      'Basic',
+                                      0,
+                                      0,
+                                      'No investment',
+                                    ),
+                                    _buildStudioPackage(
+                                      'Home Studio',
+                                      99,
+                                      5,
+                                      '+5% Quality',
+                                    ),
+                                    _buildStudioPackage(
+                                      'Pro Studio',
+                                      299,
+                                      15,
+                                      '+15% Quality',
+                                    ),
+                                    _buildStudioPackage(
+                                      'Premium Studio',
+                                      599,
+                                      30,
+                                      '+30% Quality',
+                                    ),
+                                    _buildStudioPackage(
+                                      'Elite Studio',
+                                      999,
+                                      50,
+                                      '+50% Quality',
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Selected: ${_getSelectedPackageName()}',
+                                  style: AppTheme.bodySmall.copyWith(
+                                    color: AppTheme.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppTheme.successGreen.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: AppTheme.successGreen.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.trending_up,
+                                    color: AppTheme.successGreen,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Total Quality Boost: +${(_energyInvestment * 2 + _getStudioQualityBoost()).toStringAsFixed(1)}%',
+                                    style: AppTheme.bodyMedium.copyWith(
+                                      color: AppTheme.successGreen,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -1018,7 +1206,21 @@ class _SongCreationScreenState extends State<SongCreationScreen> {
                         child: ElevatedButton(
                           onPressed: () {
                             widget.player.endWeek();
-                            Navigator.pop(context);
+
+                            // Check if awards were just received and show awards screen
+                            if (widget.player.hasNewAwards) {
+                              widget.player.clearNewAwardsFlag();
+                              Navigator.pop(context); // Pop this screen first
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      AwardsScreen(player: widget.player),
+                                ),
+                              );
+                            } else {
+                              Navigator.pop(context);
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.accentGold,
@@ -1060,99 +1262,147 @@ class _SongCreationScreenState extends State<SongCreationScreen> {
   }
 
   bool _canCreateSong() {
+    // Check base energy requirement
     if (widget.player.energy < 10) return false;
+
+    // Check if player has enough energy for the investment
+    if (widget.player.energy < (10 + _energyInvestment)) return false;
+
+    // Check if player has enough money for the investment
+    if (widget.player.money < _moneyInvestment) return false;
+
     if (_songTitleController.text.trim().isEmpty) return false;
     if (_isAlbum && _albumTitleController.text.trim().isEmpty) return false;
     if (_addToExistingAlbum && _selectedExistingAlbum == null) return false;
     if (_isCollaborativeAlbum) {
       if (_albumTitleController.text.trim().isEmpty) return false;
       if (_collaboratorNameController.text.trim().isEmpty) return false;
-      if (widget.player.energy < 30 || widget.player.money < 1000) return false;
+      if (widget.player.energy < (30 + _energyInvestment) ||
+          widget.player.money < (1000 + _moneyInvestment))
+        return false;
     }
     return true;
   }
 
   void _createSong() {
-    if (!_canCreateSong()) return;
-
-    final songTitle = _songTitleController.text.trim();
-    final albumTitle = _isAlbum ? _albumTitleController.text.trim() : null;
-
-    // Handle collaborative album creation
-    if (_isCollaborativeAlbum) {
-      final collaborativeAlbumTitle = _albumTitleController.text.trim();
-      final collaboratorName = _collaboratorNameController.text.trim();
-
-      if (collaborativeAlbumTitle.isEmpty || collaboratorName.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Please fill in both album title and collaborator name',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
-      // Create collaborative album
-      bool success = widget.player.createCollaborativeAlbum(
-        albumTitle: collaborativeAlbumTitle,
-        collaboratorName: collaboratorName,
-        collaboratorType: _collaboratorType,
-        genre: _selectedGenre,
-        coverImagePath: _selectedAlbumCoverImagePath,
-      );
-
-      if (!success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Not enough energy or money for collaborative album!',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
-      // Now create the song and add it to the collaborative album
-      widget.player.createCustomSong(
-        title: songTitle,
-        genre: _selectedGenre,
-        albumTitle: null,
-        existingAlbumTitle: collaborativeAlbumTitle,
-        coverImagePath: _selectedCoverImagePath,
-        albumCoverImagePath: _selectedAlbumCoverImagePath,
-      );
-    } else {
-      // Create the song through player model (normal flow)
-      widget.player.createCustomSong(
-        title: songTitle,
-        genre: _selectedGenre,
-        albumTitle: albumTitle,
-        existingAlbumTitle: _addToExistingAlbum ? _selectedExistingAlbum : null,
-        coverImagePath: _selectedCoverImagePath,
-        albumCoverImagePath: _selectedAlbumCoverImagePath,
-      );
+    print('DEBUG: _createSong started');
+    if (!_canCreateSong()) {
+      print('DEBUG: _canCreateSong returned false');
+      return;
     }
 
-    // Call the callback and navigate back
-    widget.onSongCreated();
-    Navigator.pop(context);
+    try {
+      print('DEBUG: Creating song - entering try block');
+      final songTitle = _songTitleController.text.trim();
+      final albumTitle = _isAlbum ? _albumTitleController.text.trim() : null;
+      print('DEBUG: Song title: $songTitle, Album title: $albumTitle');
 
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Successfully created "$songTitle"!',
-          style: AppTheme.bodyLarge,
+      // Handle collaborative album creation
+      if (_isCollaborativeAlbum) {
+        print('DEBUG: Creating collaborative album');
+        final collaborativeAlbumTitle = _albumTitleController.text.trim();
+        final collaboratorName = _collaboratorNameController.text.trim();
+
+        if (collaborativeAlbumTitle.isEmpty || collaboratorName.isEmpty) {
+          print('DEBUG: Empty collaborative album or collaborator name');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Please fill in both album title and collaborator name',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
+        // Create collaborative album
+        bool success = widget.player.createCollaborativeAlbum(
+          albumTitle: collaborativeAlbumTitle,
+          collaboratorName: collaboratorName,
+          collaboratorType: _collaboratorType,
+          genre: _selectedGenre,
+          coverImagePath: _selectedAlbumCoverImagePath,
+        );
+
+        if (!success) {
+          print('DEBUG: Collaborative album creation failed');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Not enough energy or money for collaborative album!',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
+        // Now create the song and add it to the collaborative album
+        print('DEBUG: Creating song for collaborative album');
+        widget.player.createCustomSong(
+          title: songTitle,
+          genre: _selectedGenre,
+          albumTitle: null,
+          existingAlbumTitle: collaborativeAlbumTitle,
+          coverImagePath: _selectedCoverImagePath,
+          albumCoverImagePath: _selectedAlbumCoverImagePath,
+          energyInvestment: _energyInvestment,
+          moneyInvestment: _moneyInvestment,
+        );
+      } else {
+        // Create the song through player model (normal flow)
+        print('DEBUG: Creating regular song');
+        widget.player.createCustomSong(
+          title: songTitle,
+          genre: _selectedGenre,
+          albumTitle: albumTitle,
+          existingAlbumTitle: _addToExistingAlbum
+              ? _selectedExistingAlbum
+              : null,
+          coverImagePath: _selectedCoverImagePath,
+          albumCoverImagePath: _selectedAlbumCoverImagePath,
+          energyInvestment: _energyInvestment,
+          moneyInvestment: _moneyInvestment,
+        );
+      }
+
+      print('DEBUG: Song created successfully, showing snackbar');
+      // Show success message before navigation
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Successfully created "$songTitle"!',
+            style: AppTheme.bodyLarge,
+          ),
+          backgroundColor: AppTheme.successGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        backgroundColor: AppTheme.successGreen,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+      );
+
+      print('DEBUG: Calling onSongCreated callback');
+      // Call the callback and navigate back
+      widget.onSongCreated();
+      print('DEBUG: Popping navigation');
+      Navigator.pop(context);
+      print('DEBUG: _createSong completed successfully');
+    } catch (e) {
+      print('DEBUG: Exception in _createSong: $e');
+      // Handle any unexpected errors
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error creating song: $e', style: AppTheme.bodyLarge),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
   }
 
   void _selectCoverImage() async {
@@ -1184,6 +1434,106 @@ class _SongCreationScreenState extends State<SongCreationScreen> {
       setState(() {
         _selectedAlbumCoverImagePath = imagePath;
       });
+    }
+  }
+
+  // Studio Package Builder
+  Widget _buildStudioPackage(
+    String name,
+    int cost,
+    int qualityBoost,
+    String description,
+  ) {
+    bool isSelected = _moneyInvestment == cost;
+    bool canAfford = widget.player.money >= cost;
+
+    return GestureDetector(
+      onTap: canAfford
+          ? () {
+              setState(() {
+                _moneyInvestment = cost;
+              });
+            }
+          : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppTheme.accentGold.withOpacity(0.2)
+              : AppTheme.cardBackground,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected
+                ? AppTheme.accentGold
+                : canAfford
+                ? AppTheme.textSecondary.withOpacity(0.3)
+                : Colors.red.withOpacity(0.3),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              name,
+              style: AppTheme.bodySmall.copyWith(
+                fontWeight: FontWeight.w600,
+                color: canAfford ? AppTheme.textPrimary : Colors.red,
+              ),
+            ),
+            if (cost > 0) ...[
+              Text(
+                '\$${cost}',
+                style: AppTheme.bodySmall.copyWith(
+                  color: AppTheme.accentGold,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+            Text(
+              description,
+              style: AppTheme.bodySmall.copyWith(
+                fontSize: 10,
+                color: AppTheme.successGreen,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getSelectedPackageName() {
+    switch (_moneyInvestment) {
+      case 0:
+        return 'Basic (Free)';
+      case 99:
+        return 'Home Studio (\$99)';
+      case 299:
+        return 'Pro Studio (\$299)';
+      case 599:
+        return 'Premium Studio (\$599)';
+      case 999:
+        return 'Elite Studio (\$999)';
+      default:
+        return 'Custom (\$${_moneyInvestment})';
+    }
+  }
+
+  double _getStudioQualityBoost() {
+    switch (_moneyInvestment) {
+      case 0:
+        return 0;
+      case 99:
+        return 5;
+      case 299:
+        return 15;
+      case 599:
+        return 30;
+      case 999:
+        return 50;
+      default:
+        return _moneyInvestment / 100.0; // Fallback for old system
     }
   }
 }

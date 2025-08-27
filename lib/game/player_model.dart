@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+import 'dart:io';
 import 'award_system.dart';
 
 class Trait {
@@ -156,6 +157,13 @@ class Album {
     totalPlays = songs.fold(0, (sum, song) => sum + song.plays);
     totalRevenue = songs.fold(0.0, (sum, song) => sum + song.revenue);
   }
+
+  // Performance analytics helper methods
+  int get totalStreams =>
+      songs.fold(0, (sum, song) => sum + song.popularity.streams);
+  double get averageQuality => songs.isEmpty
+      ? 0.0
+      : songs.fold(0.0, (sum, song) => sum + song.quality) / songs.length;
 
   // Check if album is eligible for vinyl release
   bool get canCreateVinyl {
@@ -335,19 +343,35 @@ class SongPopularity {
   }) : platforms = platforms ?? ['Independent'];
 
   void updatePopularity(int playerFame, int songQuality) {
-    // Base growth calculation
+    // Base growth calculation with more steady progression
     int baseGrowth = (playerFame * songQuality / 100).round();
     baseGrowth = baseGrowth.clamp(10, 10000);
 
-    // Random factor for viral potential
+    // Add steady weekly growth based on song age and existing popularity
+    int ageBonus = (streams * 0.02).round().clamp(
+      5,
+      1000,
+    ); // 2% of current streams
+    int steadyGrowth = (baseGrowth * 0.7 + ageBonus)
+        .round(); // 70% base + age bonus
+
+    // Random factor for viral potential (reduced frequency for more steady growth)
     double viralChance = Random().nextDouble();
-    if (viralChance > 0.95) {
-      baseGrowth *= 10; // Viral hit!
-    } else if (viralChance > 0.85) {
-      baseGrowth *= 3; // Popular song
+    if (viralChance > 0.98) {
+      steadyGrowth *= 8; // Viral hit! (reduced multiplier)
+    } else if (viralChance > 0.92) {
+      steadyGrowth = (steadyGrowth * 2.5)
+          .round(); // Popular song (reduced multiplier)
+    } else if (viralChance > 0.8) {
+      steadyGrowth = (steadyGrowth * 1.5).round(); // Minor boost
     }
 
-    dailyGrowth = baseGrowth;
+    // Apply quality-based consistency boost
+    double qualityMultiplier =
+        1.0 + (songQuality / 200.0); // Higher quality = more consistent growth
+    steadyGrowth = (steadyGrowth * qualityMultiplier).round();
+
+    dailyGrowth = steadyGrowth;
     streams += dailyGrowth;
     views += (dailyGrowth * 0.7).round(); // Slightly fewer views than streams
 
@@ -368,6 +392,50 @@ class SongPopularity {
   bool get isViral => streams > 1000000;
   bool get isHit => streams > 500000;
   bool get isPopular => streams > 100000;
+}
+
+// Collaboration request system
+enum CollaborationRequestStatus { pending, accepted, rejected, expired }
+
+class CollaborationRequest {
+  final String id;
+  final String contactName;
+  final String contactType;
+  final String proposedProjectType; // 'song', 'album', 'feature'
+  final String message;
+  final DateTime sentDate;
+  final int offerAmount; // Money offered as incentive
+  CollaborationRequestStatus status;
+  DateTime? responseDate;
+  String? responseMessage;
+
+  CollaborationRequest({
+    required this.id,
+    required this.contactName,
+    required this.contactType,
+    required this.proposedProjectType,
+    required this.message,
+    required this.sentDate,
+    this.offerAmount = 0,
+    this.status = CollaborationRequestStatus.pending,
+    this.responseDate,
+    this.responseMessage,
+  });
+
+  bool get isExpired => DateTime.now().difference(sentDate).inDays > 7;
+
+  double get acceptanceChance {
+    // Base chance depends on project type and offer amount
+    double baseChance = 0.3;
+    if (proposedProjectType == 'feature') baseChance = 0.6;
+    if (proposedProjectType == 'song') baseChance = 0.4;
+    if (proposedProjectType == 'album') baseChance = 0.2;
+
+    // Increase chance based on money offered
+    double moneyBonus = (offerAmount / 10000.0).clamp(0.0, 0.4);
+
+    return (baseChance + moneyBonus).clamp(0.0, 0.9);
+  }
 }
 
 class Contact {
@@ -449,6 +517,7 @@ class PlayerModel extends ChangeNotifier {
   int week = 1;
   int year = 2025;
   String? eventMessage;
+  bool hasNewAwards = false; // Flag to indicate awards were just received
 
   // Music career stats
   int fans = 0;
@@ -527,6 +596,10 @@ class PlayerModel extends ChangeNotifier {
   bool hasPartner = false;
   int partnerRelationship = 0;
   List<Contact> contacts = [];
+
+  // Collaboration request system
+  List<CollaborationRequest> sentCollaborationRequests = [];
+  List<CollaborationRequest> receivedCollaborationRequests = [];
 
   // Artist Traits
   late Trait vocals;
@@ -665,10 +738,10 @@ class PlayerModel extends ChangeNotifier {
             'Electronic music innovator. Master of creating viral dance tracks.',
       ),
 
-      // Influencers & Critics
+      // Streamers & Critics
       Contact(
         name: 'Casey Martinez',
-        type: 'influencer',
+        type: 'streamer',
         genre: 'All',
         influence: 7,
         bio: 'Music blogger with massive following. Reviews can go viral.',
@@ -683,7 +756,7 @@ class PlayerModel extends ChangeNotifier {
       ),
       Contact(
         name: 'Tommy "Viral" Lee',
-        type: 'influencer',
+        type: 'streamer',
         genre: 'All',
         influence: 6,
         bio: 'Social media personality who can make songs trend overnight.',
@@ -772,20 +845,34 @@ class PlayerModel extends ChangeNotifier {
     String? existingAlbumTitle,
     String? coverImagePath,
     String? albumCoverImagePath,
+    int energyInvestment = 0,
+    int moneyInvestment = 0,
   }) {
-    if (energy >= 10) {
-      energy -= 10;
+    if (energy >= (10 + energyInvestment) && money >= moneyInvestment) {
+      energy -= (10 + energyInvestment);
+      money -= moneyInvestment;
 
-      // Song quality based on songwriting skill and some randomness
-      int songQuality = (songWriting.level * 10 + Random().nextInt(40)).clamp(
-        10,
-        100,
-      );
+      // Base song quality based on songwriting skill and some randomness
+      int baseSongQuality = (songWriting.level * 10 + Random().nextInt(40))
+          .clamp(10, 100);
+
+      // Calculate quality boost from investments
+      double energyBoost = energyInvestment * 2.0; // 2% per energy point
+      double moneyBoost = _getStudioQualityBoost(
+        moneyInvestment,
+      ); // Studio package boost
+      double totalBoost = energyBoost + moneyBoost;
+
+      // Apply boost to quality (max boost is 50% to keep balance)
+      int finalQuality =
+          (baseSongQuality * (1 + (totalBoost.clamp(0, 50) / 100)))
+              .round()
+              .clamp(10, 100);
 
       final song = Song(
         title: title,
         genre: genre,
-        quality: songQuality,
+        quality: finalQuality,
         releaseDate: DateTime.now(),
         albumTitle: albumTitle ?? existingAlbumTitle,
         coverImagePath: coverImagePath,
@@ -816,7 +903,8 @@ class PlayerModel extends ChangeNotifier {
         eventMessage = 'Added "$title" to album "$existingAlbumTitle"!';
       } else {
         // Single release
-        eventMessage = 'Created new single: "$title" (Quality: $songQuality%)!';
+        eventMessage =
+            'Created new single: "$title" (Quality: $finalQuality%)!';
       }
 
       songWriting.addProgress(0.3);
@@ -1503,6 +1591,9 @@ class PlayerModel extends ChangeNotifier {
       money += (weeklySales * vinyl.pricePerUnit).round();
     }
 
+    // Process collaboration requests
+    _processCollaborationRequests();
+
     String jobIncomeText = currentJob != null
         ? ' (including \$${weeklyJobIncome} from ${currentJob})'
         : '';
@@ -1566,11 +1657,17 @@ class PlayerModel extends ChangeNotifier {
       }
 
       eventMessage = yearSummary;
+      hasNewAwards = true; // Set flag to show awards screen
     }
   }
 
   void clearEvent() {
     eventMessage = null;
+    notifyListeners();
+  }
+
+  void clearNewAwardsFlag() {
+    hasNewAwards = false;
     notifyListeners();
   }
 
@@ -1602,60 +1699,46 @@ class PlayerModel extends ChangeNotifier {
         break;
 
       case 'collaborate':
-        if (contact.relationshipLevel >= 20) {
-          relationshipChange = Random().nextInt(20) + 10;
-          contact.hasCollabed = true;
-          contact.recentInteractions.add('Collaborated on a project');
+        // Send collaboration request instead of automatic collaboration
+        if (contact.influence >= 5) {
+          // Only established artists (influence 5+)
+          // Check if already sent a request recently
+          bool hasRecentRequest = sentCollaborationRequests.any(
+            (req) =>
+                req.contactName == contact.name &&
+                req.status == CollaborationRequestStatus.pending &&
+                !req.isExpired,
+          );
 
-          // Gain benefits based on contact type and influence
-          if (contact.type == 'producer') {
-            songWriting.addProgress(0.3);
-            fame += contact.influence * 10;
-
-            // Chance for collaborative album with producer
-            if (Random().nextBool() && albums.length < 10) {
-              String albumTitle = "Produced by ${contact.name}";
-              createCollaborativeAlbum(
-                albumTitle: albumTitle,
-                collaboratorName: contact.name,
-                collaboratorType: "producer",
-                genre: avatarStyle,
-                coverImagePath: null,
-              );
-              outcome =
-                  'Created collaborative album with producer ${contact.name}!';
-            } else {
-              outcome =
-                  'Successful collaboration with ${contact.name}! Your career benefits.';
-            }
-          } else if (contact.type == 'musician') {
-            charisma.addProgress(0.2);
-            fans += contact.influence * 20;
-
-            // Chance for collaborative album with artist
-            if (Random().nextBool() && albums.length < 10) {
-              String albumTitle = "$artistName & ${contact.name}";
-              createCollaborativeAlbum(
-                albumTitle: albumTitle,
-                collaboratorName: contact.name,
-                collaboratorType: "artist",
-                genre: avatarStyle,
-                coverImagePath: null,
-              );
-              outcome = 'Created joint album with ${contact.name}!';
-            } else {
-              outcome =
-                  'Successful collaboration with ${contact.name}! Your career benefits.';
-            }
-          } else if (contact.type == 'influencer') {
-            virality.addProgress(0.4);
-            socialMediaFollowers += contact.influence * 100;
+          if (hasRecentRequest) {
             outcome =
-                'Successful collaboration with ${contact.name}! Your career benefits.';
+                'You already have a pending collaboration request with ${contact.name}.';
+          } else {
+            // Create collaboration request
+            String requestId =
+                '${contact.name}_${DateTime.now().millisecondsSinceEpoch}';
+            CollaborationRequest request = CollaborationRequest(
+              id: requestId,
+              contactName: contact.name,
+              contactType: contact.type,
+              proposedProjectType: 'song', // Default to song collaboration
+              message:
+                  'Hey ${contact.name}, I\'d love to collaborate on a song together!',
+              sentDate: DateTime.now(),
+            );
+
+            sentCollaborationRequests.add(request);
+            contact.recentInteractions.add('You sent a collaboration request');
+
+            relationshipChange = Random().nextInt(10) + 5;
+            outcome =
+                'Collaboration request sent to ${contact.name}! They\'ll respond within a week.';
           }
         } else {
+          // For less established contacts, old system still works
           relationshipChange = Random().nextInt(10) + 5;
-          outcome = '${contact.name} agreed to collaborate in the future.';
+          outcome =
+              '${contact.name} is interested but wants to build their career first.';
         }
         break;
 
@@ -2641,5 +2724,296 @@ class PlayerModel extends ChangeNotifier {
 
     eventMessage = null;
     notifyListeners();
+  }
+
+  // Import custom contacts from file
+  Future<String> importContactsFromFile(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (!await file.exists()) {
+        return 'File not found!';
+      }
+
+      final content = await file.readAsString();
+      final lines = content
+          .split('\n')
+          .where((line) => line.trim().isNotEmpty)
+          .toList();
+
+      int importedCount = 0;
+      List<String> errors = [];
+
+      for (String line in lines) {
+        try {
+          // Expected format: Name|Type|Genre|Influence|Bio
+          // Example: Drake|musician|Hip-Hop|9|World-famous rapper and singer
+          final parts = line.split('|');
+          if (parts.length >= 4) {
+            String name = parts[0].trim();
+            String type = parts[1].trim().toLowerCase();
+            String genre = parts[2].trim();
+            int influence = int.tryParse(parts[3].trim()) ?? 5;
+            String bio = parts.length > 4
+                ? parts[4].trim()
+                : 'Real-world artist.';
+
+            // Validate type
+            if (![
+              'musician',
+              'producer',
+              'streamer',
+              'critic',
+            ].contains(type)) {
+              errors.add('Invalid type for $name: $type');
+              continue;
+            }
+
+            // Check if contact already exists
+            bool exists = contacts.any(
+              (contact) => contact.name.toLowerCase() == name.toLowerCase(),
+            );
+
+            if (!exists) {
+              contacts.add(
+                Contact(
+                  name: name,
+                  type: type,
+                  genre: genre,
+                  influence: influence.clamp(1, 10),
+                  bio: bio,
+                ),
+              );
+              importedCount++;
+            }
+          } else {
+            errors.add('Invalid format: $line');
+          }
+        } catch (e) {
+          errors.add('Error processing line: $line - $e');
+        }
+      }
+
+      await saveData(); // Save the updated contacts
+      notifyListeners();
+
+      String result = 'Imported $importedCount contacts successfully!';
+      if (errors.isNotEmpty) {
+        result += '\n\nErrors:\n${errors.take(5).join('\n')}';
+        if (errors.length > 5) {
+          result += '\n... and ${errors.length - 5} more errors';
+        }
+      }
+      return result;
+    } catch (e) {
+      return 'Error reading file: $e';
+    }
+  }
+
+  // Notify about chart achievements for imported artists
+  void checkImportedArtistsInCharts(List<String> chartingArtists) {
+    List<String> importedInCharts = [];
+
+    for (Contact contact in contacts) {
+      if (contact.type == 'musician' &&
+          chartingArtists.contains(contact.name)) {
+        importedInCharts.add(contact.name);
+      }
+    }
+
+    if (importedInCharts.isNotEmpty) {
+      if (importedInCharts.length == 1) {
+        eventMessage =
+            '🎵 ${importedInCharts.first} from your imported contacts is charting in the Top 10!';
+      } else {
+        eventMessage =
+            '🎵 ${importedInCharts.length} artists from your imported contacts are charting: ${importedInCharts.take(3).join(", ")}${importedInCharts.length > 3 ? "..." : ""}!';
+      }
+      notifyListeners();
+    }
+  }
+
+  // Process collaboration requests each week
+  void _processCollaborationRequests() {
+    List<CollaborationRequest> newResponses = [];
+
+    for (var request in sentCollaborationRequests) {
+      if (request.status == CollaborationRequestStatus.pending) {
+        if (request.isExpired) {
+          request.status = CollaborationRequestStatus.expired;
+          request.responseDate = DateTime.now();
+          request.responseMessage = "Request expired - no response received.";
+        } else {
+          // Calculate response based on relationship and request details
+          Contact? contact = contacts.firstWhere(
+            (c) => c.name == request.contactName,
+            orElse: () => contacts.first, // Fallback
+          );
+
+          if (contact.name == request.contactName) {
+            double chance = request.acceptanceChance;
+
+            // Adjust chance based on relationship level
+            if (contact.relationshipLevel >= 60) {
+              chance += 0.3;
+            } else if (contact.relationshipLevel >= 40) {
+              chance += 0.15;
+            } else if (contact.relationshipLevel >= 20) {
+              chance += 0.05;
+            } else if (contact.relationshipLevel < 0) {
+              chance -= 0.2;
+            }
+
+            // Adjust chance based on player's fame and fans
+            double fameBonus = (fame / 10000.0).clamp(0.0, 0.2);
+            double fanBonus = (fans / 100000.0).clamp(0.0, 0.15);
+            chance += fameBonus + fanBonus;
+
+            // Final chance clamped between 5% and 95%
+            chance = chance.clamp(0.05, 0.95);
+
+            if (Random().nextDouble() < chance) {
+              // Request accepted!
+              request.status = CollaborationRequestStatus.accepted;
+              request.responseDate = DateTime.now();
+              request.responseMessage =
+                  "Excited to work together! Let's make some music.";
+
+              // Create the actual collaboration
+              _executeCollaboration(contact, request);
+              newResponses.add(request);
+            } else {
+              // Request rejected
+              request.status = CollaborationRequestStatus.rejected;
+              request.responseDate = DateTime.now();
+
+              List<String> rejectionMessages = [
+                "Thanks for reaching out, but I'm too busy right now.",
+                "I'm not feeling this collaboration at the moment.",
+                "My schedule is completely booked for the next few months.",
+                "I don't think our styles would mesh well together.",
+                "I'm taking a break from collaborations right now.",
+              ];
+              request.responseMessage =
+                  rejectionMessages[Random().nextInt(rejectionMessages.length)];
+            }
+          }
+        }
+      }
+    }
+
+    // Notify about responses if any
+    if (newResponses.isNotEmpty) {
+      String responseText = "";
+      int accepted = newResponses
+          .where((r) => r.status == CollaborationRequestStatus.accepted)
+          .length;
+      int rejected = newResponses
+          .where((r) => r.status == CollaborationRequestStatus.rejected)
+          .length;
+
+      if (accepted > 0) {
+        responseText += "🎉 $accepted collaboration request(s) accepted! ";
+      }
+      if (rejected > 0) {
+        responseText += "❌ $rejected collaboration request(s) rejected. ";
+      }
+
+      if (responseText.isNotEmpty) {
+        eventMessage = (eventMessage ?? "") + "\n\n" + responseText.trim();
+      }
+    }
+  }
+
+  // Execute an accepted collaboration
+  void _executeCollaboration(Contact contact, CollaborationRequest request) {
+    contact.hasCollabed = true;
+    contact.recentInteractions.add(
+      'Successfully collaborated on a ${request.proposedProjectType}',
+    );
+
+    // Gain benefits based on contact type and influence
+    if (contact.type == 'producer') {
+      songWriting.addProgress(0.4);
+      fame += contact.influence * 15;
+
+      // Create collaborative song
+      String songTitle = "${artistName} x ${contact.name}";
+      createCustomSong(
+        title: songTitle,
+        genre: avatarStyle,
+        albumTitle: null,
+        existingAlbumTitle: null,
+        coverImagePath: null,
+        albumCoverImagePath: null,
+      );
+    } else if (contact.type == 'musician') {
+      charisma.addProgress(0.3);
+      fans += contact.influence * 30;
+
+      // Create collaborative song
+      String songTitle = "${artistName} feat. ${contact.name}";
+      createCustomSong(
+        title: songTitle,
+        genre: avatarStyle,
+        albumTitle: null,
+        existingAlbumTitle: null,
+        coverImagePath: null,
+        albumCoverImagePath: null,
+      );
+    } else if (contact.type == 'streamer') {
+      virality.addProgress(0.5);
+      socialMediaFollowers += contact.influence * 200;
+    }
+
+    // Boost relationship
+    contact.relationshipLevel = (contact.relationshipLevel + 25).clamp(0, 100);
+  }
+
+  // Generate sample file content for users
+  String getSampleFileContent() {
+    return '''# Music Career Simulator - Custom Contacts File
+# Format: Name|Type|Genre|Influence|Bio
+# Types: musician, producer, streamer, critic
+# Influence: 1-10 (higher = more influential)
+# Lines starting with # are ignored
+
+# Musicians
+Taylor Swift|musician|Pop|10|Global superstar known for storytelling and reinvention
+Drake|musician|Hip-Hop|9|Chart-topping rapper and singer
+Billie Eilish|musician|Pop|8|Young artist known for unique sound and style
+The Weeknd|musician|R&B|8|R&B artist with atmospheric sound
+
+# Producers  
+Max Martin|producer|Pop|10|Legendary pop producer behind countless hits
+Dr. Dre|producer|Hip-Hop|9|Hip-hop mogul and producer
+Calvin Harris|producer|Electronic|7|Electronic music producer and DJ
+
+# Streamers
+PewDiePie|streamer|All|9|Massive YouTube creator who can boost music
+Ninja|streamer|All|7|Top Twitch streamer with huge following
+MrBeast|streamer|All|8|Viral content creator with global reach
+
+# Critics
+Anthony Fantano|critic|All|7|Influential music reviewer "The Needle Drop"
+Pitchfork Editorial|critic|All|8|Respected music publication
+Rolling Stone|critic|All|9|Legendary music magazine''';
+  }
+
+  // Studio package quality boost calculation
+  double _getStudioQualityBoost(int moneyInvestment) {
+    switch (moneyInvestment) {
+      case 0:
+        return 0;
+      case 99:
+        return 5;
+      case 299:
+        return 15;
+      case 599:
+        return 30;
+      case 999:
+        return 50;
+      default:
+        return moneyInvestment / 100.0; // Fallback for old system
+    }
   }
 }

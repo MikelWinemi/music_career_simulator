@@ -1,0 +1,42 @@
+# Music Career Simulator - Custom Contacts File
+# Format: Name|Type|Genre|Influence|Bio
+# Types: musician, producer, streamer, critic
+# Influence: 1-10 (higher = more influential)
+# Lines starting with # are ignored
+
+# Musicians
+Taylor Swift|musician|Pop|10|Global superstar known for storytelling and reinvention
+Drake|musician|Hip-Hop|9|Chart-topping rapper and singer
+Billie Eilish|musician|Pop|8|Young artist known for unique sound and style
+The Weeknd|musician|R&B|8|R&B artist with atmospheric sound
+Kendrick Lamar|musician|Hip-Hop|9|Critically acclaimed rapper and lyricist
+Ariana Grande|musician|Pop|8|Pop sensation with incredible vocal range
+Ed Sheeran|musician|Pop|8|Singer-songwriter with global appeal
+Bad Bunny|musician|Reggaeton|7|Latin trap and reggaeton superstar
+BTS|musician|K-Pop|9|Global K-pop phenomenon
+Olivia Rodrigo|musician|Pop|7|Rising pop star with emotional songwriting
+
+# Producers  
+Max Martin|producer|Pop|10|Legendary pop producer behind countless hits
+Dr. Dre|producer|Hip-Hop|9|Hip-hop mogul and producer
+Calvin Harris|producer|Electronic|7|Electronic music producer and DJ
+Metro Boomin|producer|Hip-Hop|8|Top trap and hip-hop producer
+Timbaland|producer|R&B|8|Innovative R&B and hip-hop producer
+Rick Rubin|producer|Rock|9|Legendary producer across multiple genres
+Diplo|producer|Electronic|7|Electronic music producer and DJ
+
+# Streamers
+PewDiePie|streamer|All|9|Massive YouTube creator who can boost music
+Ninja|streamer|All|7|Top Twitch streamer with huge following
+MrBeast|streamer|All|8|Viral content creator with global reach
+Pokimane|streamer|All|6|Popular Twitch streamer and content creator
+xQc|streamer|All|6|High-energy Twitch streamer with large audience
+Valkyrae|streamer|All|6|Popular YouTube Gaming streamer
+Corpse Husband|streamer|All|7|Mysterious streamer with deep voice and music career
+
+# Critics
+Anthony Fantano|critic|All|7|Influential music reviewer "The Needle Drop"
+Pitchfork Editorial|critic|All|8|Respected music publication
+Rolling Stone|critic|All|9|Legendary music magazine
+Robert Christgau|critic|All|8|Veteran music critic and journalist
+Complex Music|critic|All|6|Hip-hop and pop culture publication

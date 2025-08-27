@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'player_model.dart';
 import 'ui/app_theme.dart';
+import 'awards_screen.dart';
 
 class RelationshipManagementScreen extends StatefulWidget {
   final PlayerModel player;
@@ -177,7 +178,7 @@ class _RelationshipManagementScreenState
                       _buildFilterTab('all', 'All'),
                       _buildFilterTab('musician', 'Musicians'),
                       _buildFilterTab('producer', 'Producers'),
-                      _buildFilterTab('influencer', 'Influencers'),
+                      _buildFilterTab('streamer', 'Streamers'),
                       _buildFilterTab('critic', 'Critics'),
                     ],
                   ),
@@ -199,7 +200,21 @@ class _RelationshipManagementScreenState
                   child: ElevatedButton(
                     onPressed: () {
                       widget.player.endWeek();
-                      Navigator.pop(context);
+
+                      // Check if awards were just received and show awards screen
+                      if (widget.player.hasNewAwards) {
+                        widget.player.clearNewAwardsFlag();
+                        Navigator.pop(context); // Pop this screen first
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                AwardsScreen(player: widget.player),
+                          ),
+                        );
+                      } else {
+                        Navigator.pop(context);
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.accentGold,
@@ -646,8 +661,8 @@ class _RelationshipManagementScreenState
         return Icons.music_note;
       case 'producer':
         return Icons.settings_input_component;
-      case 'influencer':
-        return Icons.trending_up;
+      case 'streamer':
+        return Icons.live_tv;
       case 'critic':
         return Icons.rate_review;
       default:

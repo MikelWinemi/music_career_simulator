@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'player_model.dart';
 import 'ui/app_theme.dart';
+import 'awards_screen.dart';
 
 class FinancialsScreen extends StatelessWidget {
   final PlayerModel player;
@@ -122,7 +123,7 @@ class FinancialsScreen extends StatelessWidget {
                             ],
                           ),
                           child: ElevatedButton(
-                            onPressed: player.endWeek,
+                            onPressed: () => _handleEndWeek(context),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               shadowColor: Colors.transparent,
@@ -842,5 +843,18 @@ class FinancialsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _handleEndWeek(BuildContext context) {
+    player.endWeek();
+
+    // Check if awards were just received and show awards screen
+    if (player.hasNewAwards) {
+      player.clearNewAwardsFlag();
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => AwardsScreen(player: player)),
+      );
+    }
   }
 }

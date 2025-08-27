@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'player_model.dart';
 import 'ui/app_theme.dart';
 import 'game_wrapper.dart';
+import 'awards_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final PlayerModel player;
@@ -128,7 +130,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ],
                           ),
                           child: ElevatedButton(
-                            onPressed: widget.player.endWeek,
+                            onPressed: () => _handleEndWeek(context),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               shadowColor: Colors.transparent,
@@ -214,6 +216,110 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       'RESTART GAME',
                                       style: AppTheme.bodyLarge.copyWith(
                                         fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Custom Content Import Section
+                      Container(
+                        decoration: AppTheme.cardDecoration,
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.upload_file,
+                                  color: AppTheme.primaryPurple,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Import Real-World Artists',
+                                  style: AppTheme.titleMedium.copyWith(
+                                    color: AppTheme.accentGold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Import a custom file with real-world musicians and streamers to expand your industry contacts',
+                              style: AppTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Import File Button
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () => _importContactFile(),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primaryPurple,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.file_upload, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'IMPORT CONTACT FILE',
+                                      style: AppTheme.bodyLarge.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            // Generate Sample File Button
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed: () => _showSampleFileDialog(),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(
+                                    color: AppTheme.primaryPurple,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.description,
+                                      size: 20,
+                                      color: AppTheme.primaryPurple,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'VIEW SAMPLE FORMAT',
+                                      style: AppTheme.bodyLarge.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.primaryPurple,
                                       ),
                                     ),
                                   ],
@@ -677,6 +783,158 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         );
       },
+    );
+  }
+
+  Future<void> _importContactFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['txt', 'csv'],
+        dialogTitle: 'Select Contact File',
+      );
+
+      if (result != null && result.files.single.path != null) {
+        String filePath = result.files.single.path!;
+        String importResult = await widget.player.importContactsFromFile(
+          filePath,
+        );
+
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: AppTheme.cardBackground,
+              title: Row(
+                children: [
+                  const Icon(Icons.info, color: AppTheme.primaryPurple),
+                  const SizedBox(width: 8),
+                  Text('Import Results', style: AppTheme.titleMedium),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Text(importResult, style: AppTheme.bodyMedium),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'OK',
+                    style: AppTheme.bodyLarge.copyWith(
+                      color: AppTheme.accentGold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: AppTheme.cardBackground,
+            title: Row(
+              children: [
+                const Icon(Icons.error, color: AppTheme.energyRed),
+                const SizedBox(width: 8),
+                Text('Import Error', style: AppTheme.titleMedium),
+              ],
+            ),
+            content: Text(
+              'Failed to import file: $e',
+              style: AppTheme.bodyMedium,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'OK',
+                  style: AppTheme.bodyLarge.copyWith(
+                    color: AppTheme.accentGold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
+  void _handleEndWeek(BuildContext context) {
+    widget.player.endWeek();
+
+    // Check if awards were just received and show awards screen
+    if (widget.player.hasNewAwards) {
+      widget.player.clearNewAwardsFlag();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AwardsScreen(player: widget.player),
+        ),
+      );
+    }
+  }
+
+  void _showSampleFileDialog() {
+    String sampleContent = widget.player.getSampleFileContent();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.cardBackground,
+        title: Row(
+          children: [
+            const Icon(Icons.description, color: AppTheme.primaryPurple),
+            const SizedBox(width: 8),
+            Text('Sample File Format', style: AppTheme.titleMedium),
+          ],
+        ),
+        content: Container(
+          width: double.maxFinite,
+          height: 400,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Create a text file (.txt) with this format:',
+                  style: AppTheme.bodyMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppTheme.primaryPurple.withOpacity(0.3),
+                    ),
+                  ),
+                  child: SelectableText(
+                    sampleContent,
+                    style: AppTheme.bodySmall.copyWith(fontFamily: 'monospace'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Got it!',
+              style: AppTheme.bodyLarge.copyWith(color: AppTheme.accentGold),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -8,6 +8,9 @@ import 'collaborative_album_screen.dart';
 import 'group_management_screen.dart';
 import 'vinyl_management_screen.dart';
 import 'touring_screen.dart';
+import 'awards_screen.dart';
+import 'performance_analytics_screen.dart';
+import 'charts_screen.dart';
 
 class MusicCareerScreen extends StatelessWidget {
   final PlayerModel player;
@@ -128,7 +131,7 @@ class MusicCareerScreen extends StatelessWidget {
                                   ],
                                 ),
                                 child: ElevatedButton(
-                                  onPressed: player.endWeek,
+                                  onPressed: () => _handleEndWeek(context),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.transparent,
                                     shadowColor: Colors.transparent,
@@ -256,8 +259,10 @@ class MusicCareerScreen extends StatelessWidget {
                                   MaterialPageRoute(
                                     builder: (context) => SongCreationScreen(
                                       player: player,
-                                      onSongCreated: () =>
-                                          Navigator.pop(context),
+                                      onSongCreated: () {
+                                        // This callback can be used for additional logic if needed
+                                        // Navigator.pop is already handled in SongCreationScreen
+                                      },
                                     ),
                                   ),
                                 ),
@@ -366,6 +371,24 @@ class MusicCareerScreen extends StatelessWidget {
                           Icons.favorite,
                           const Color(0xFFEC4899),
                           () => _navigateToRelationships(context),
+                          energyCost: 0,
+                        ),
+                        const SizedBox(height: 12),
+
+                        _buildActionButton(
+                          'Performance Analytics',
+                          Icons.analytics,
+                          const Color(0xFF059669),
+                          () => _navigateToAnalytics(context),
+                          energyCost: 0,
+                        ),
+                        const SizedBox(height: 12),
+
+                        _buildActionButton(
+                          'Top Charts',
+                          Icons.leaderboard,
+                          const Color(0xFF7C3AED),
+                          () => _navigateToCharts(context),
                           energyCost: 0,
                         ),
                         const SizedBox(
@@ -668,6 +691,22 @@ class MusicCareerScreen extends StatelessWidget {
     );
   }
 
+  void _navigateToAnalytics(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PerformanceAnalyticsScreen(player: player),
+      ),
+    );
+  }
+
+  void _navigateToCharts(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ChartsScreen(player: player)),
+    );
+  }
+
   void _navigateToGroups(BuildContext context) {
     Navigator.push(
       context,
@@ -691,5 +730,18 @@ class MusicCareerScreen extends StatelessWidget {
       context,
       MaterialPageRoute(builder: (context) => TouringScreen(player: player)),
     );
+  }
+
+  void _handleEndWeek(BuildContext context) {
+    player.endWeek();
+
+    // Check if awards were just received and show awards screen
+    if (player.hasNewAwards) {
+      player.clearNewAwardsFlag();
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => AwardsScreen(player: player)),
+      );
+    }
   }
 }
